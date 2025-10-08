@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Kiambu Recycling & Scraps Platform
 
 A Progressive Web Application (PWA) for managing recycling and scrap collection in Kiambu County. Built with PHP, MySQL, and vanilla JavaScript.
@@ -227,3 +228,6 @@ docker run -p 8080:80 -v $(pwd):/var/www/html php:8.1-apache
 ## License
 
 MIT License. See LICENSE file for details.
+=======
+# Scrap
+>>>>>>> 7ad8f1bb6a929c0b8e0c52f1fff6d7ee40caca4b
