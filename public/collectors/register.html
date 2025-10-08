@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collector Registration - Kiambu Recycling & Scraps</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-green-600 text-white">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <a href="/" class="font-bold text-xl">Kiambu Recycling</a>
+                    <div>
+                        <a href="/login.html" class="hover:text-green-200">Login</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-8">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h1 class="text-2xl font-bold mb-6">Collector Registration</h1>
+
+                    <!-- Progress Steps -->
+                    <div class="flex items-center justify-between mb-8">
+                        <div class="flex-1">
+                            <div id="step1Indicator" class="h-2 bg-green-600 rounded-l-full"></div>
+                        </div>
+                        <div class="flex-1">
+                            <div id="step2Indicator" class="h-2 bg-gray-200"></div>
+                        </div>
+                        <div class="flex-1">
+                            <div id="step3Indicator" class="h-2 bg-gray-200 rounded-r-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <form id="registrationForm" class="space-y-6">
+                        <!-- Step 1: Personal Information -->
+                        <div id="step1" class="space-y-4">
+                            <h2 class="text-xl font-semibold mb-4">Personal Information</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                                    <input type="text" name="fullName" required
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                                    <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$"
+                                           placeholder="+254700000000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ID Number</label>
+                                    <input type="text" name="idNumber" required
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                    <input type="date" name="dateOfBirth" required
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Residential Address</label>
+                                <textarea name="address" required rows="2"
+                                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"></textarea>
+                            </div>
+
+                            <div id="addressMap" class="h-64 rounded-lg overflow-hidden"></div>
+                        </div>
+
+                        <!-- Step 2: Vehicle Information -->
+                        <div id="step2" class="hidden space-y-4">
+                            <h2 class="text-xl font-semibold mb-4">Vehicle Information</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Vehicle Type</label>
+                                    <select name="vehicleType" required
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                        <option value="">Select Vehicle Type</option>
+                                        <option value="truck">Truck</option>
+                                        <option value="pickup">Pickup</option>
+                                        <option value="tuktuk">Tuk-tuk</option>
+                                        <option value="motorcycle">Motorcycle</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Vehicle Registration</label>
+                                    <input type="text" name="vehicleReg" required
+                                           placeholder="e.g., KAA 123B"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Collection Areas</label>
+                                <div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="kiambu">
+                                        <span>Kiambu Town</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="thika">
+                                        <span>Thika</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="ruiru">
+                                        <span>Ruiru</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="juja">
+                                        <span>Juja</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="githunguri">
+                                        <span>Githunguri</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="areas[]" value="limuru">
+                                        <span>Limuru</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Materials Collected</label>
+                                <div class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="materials[]" value="plastic">
+                                        <span>Plastic</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="materials[]" value="paper">
+                                        <span>Paper</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="materials[]" value="metal">
+                                        <span>Metal</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="materials[]" value="glass">
+                                        <span>Glass</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2">
+                                        <input type="checkbox" name="materials[]" value="electronics">
+                                        <span>Electronics</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Documents -->
+                        <div id="step3" class="hidden space-y-4">
+                            <h2 class="text-xl font-semibold mb-4">Required Documents</h2>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ID Card Photo (Front)</label>
+                                    <input type="file" name="idCardFront" accept="image/*" required
+                                           class="mt-1 block w-full text-sm text-gray-500
+                                                  file:mr-4 file:py-2 file:px-4
+                                                  file:rounded-full file:border-0
+                                                  file:text-sm file:font-semibold
+                                                  file:bg-green-50 file:text-green-700
+                                                  hover:file:bg-green-100">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">ID Card Photo (Back)</label>
+                                    <input type="file" name="idCardBack" accept="image/*" required
+                                           class="mt-1 block w-full text-sm text-gray-500
+                                                  file:mr-4 file:py-2 file:px-4
+                                                  file:rounded-full file:border-0
+                                                  file:text-sm file:font-semibold
+                                                  file:bg-green-50 file:text-green-700
+                                                  hover:file:bg-green-100">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Vehicle Registration Document</label>
+                                    <input type="file" name="vehicleDoc" accept="image/*,application/pdf" required
+                                           class="mt-1 block w-full text-sm text-gray-500
+                                                  file:mr-4 file:py-2 file:px-4
+                                                  file:rounded-full file:border-0
+                                                  file:text-sm file:font-semibold
+                                                  file:bg-green-50 file:text-green-700
+                                                  hover:file:bg-green-100">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Good Conduct Certificate</label>
+                                    <input type="file" name="goodConduct" accept="image/*,application/pdf" required
+                                           class="mt-1 block w-full text-sm text-gray-500
+                                                  file:mr-4 file:py-2 file:px-4
+                                                  file:rounded-full file:border-0
+                                                  file:text-sm file:font-semibold
+                                                  file:bg-green-50 file:text-green-700
+                                                  hover:file:bg-green-100">
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="flex items-start space-x-2">
+                                    <input type="checkbox" name="agreement" required class="mt-1">
+                                    <span class="text-sm text-gray-600">
+                                        I confirm that all information provided is accurate and I agree to the
+                                        <a href="/terms.html" class="text-green-600 hover:text-green-700">Terms of Service</a>
+                                        and
+                                        <a href="/privacy.html" class="text-green-600 hover:text-green-700">Privacy Policy</a>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="flex justify-between pt-4">
+                            <button type="button" id="prevBtn" onclick="prevStep()"
+                                    class="hidden px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                                Previous
+                            </button>
+                            <button type="button" id="nextBtn" onclick="nextStep()"
+                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                Next
+                            </button>
+                            <button type="submit" id="submitBtn"
+                                    class="hidden px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                Submit Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize map
+        const map = L.map('addressMap').setView([-1.1712, 36.8356], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+        let selectedLocation = null;
+
+        map.on('click', function(e) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker(e.latlng).addTo(map);
+            selectedLocation = e.latlng;
+        });
+
+        // Form navigation
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        function updateStepIndicators() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const indicator = document.getElementById(`step${i}Indicator`);
+                indicator.className = `h-2 ${i === 1 ? 'rounded-l-full' : ''} ${i === totalSteps ? 'rounded-r-full' : ''} ${i <= currentStep ? 'bg-green-600' : 'bg-gray-200'}`;
+            }
+        }
+
+        function showStep(step) {
+            // Hide all steps
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`step${i}`).classList.add('hidden');
+            }
+            // Show current step
+            document.getElementById(`step${step}`).classList.remove('hidden');
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').classList.toggle('hidden', step === 1);
+            document.getElementById('nextBtn').classList.toggle('hidden', step === totalSteps);
+            document.getElementById('submitBtn').classList.toggle('hidden', step !== totalSteps);
+            
+            updateStepIndicators();
+        }
+
+        function validateCurrentStep() {
+            const currentForm = document.getElementById(`step${currentStep}`);
+            const inputs = currentForm.querySelectorAll('input[required], select[required], textarea[required]');
+            let isValid = true;
+
+            inputs.forEach(input => {
+                if (!input.checkValidity()) {
+                    isValid = false;
+                    input.reportValidity();
+                }
+            });
+
+            if (currentStep === 1 && !selectedLocation) {
+                alert('Please select your location on the map');
+                return false;
+            }
+
+            if (currentStep === 2) {
+                const areas = document.querySelectorAll('input[name="areas[]"]:checked');
+                const materials = document.querySelectorAll('input[name="materials[]"]:checked');
+                
+                if (areas.length === 0) {
+                    alert('Please select at least one collection area');
+                    return false;
+                }
+                
+                if (materials.length === 0) {
+                    alert('Please select at least one material type');
+                    return false;
+                }
+            }
+
+            return isValid;
+        }
+
+        function nextStep() {
+            if (validateCurrentStep() && currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        // Form submission
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateCurrentStep()) {
+                return;
+            }
+
+            const formData = new FormData(this);
+            formData.append('latitude', selectedLocation.lat);
+            formData.append('longitude', selectedLocation.lng);
+
+            try {
+                const response = await fetch('/api/collectors/register.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert('Registration submitted successfully! We will review your application and contact you soon.');
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Failed to submit registration. Please try again.');
+                console.error(error);
+            }
+        });
+
+        // Initialize first step
+        showStep(1);
+    </script>
+</body>
+</html>

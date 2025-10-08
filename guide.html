@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recycling Guide - Kiambu Recycling & Scraps</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-green-600 text-white">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <a href="/scrap/dashboard.html" class="font-bold text-xl">Kiambu Recycling</a>
+                <a href="/scrap/dashboard.html" class="hover:text-green-200">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Tabs -->
+        <div class="mb-8">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="showTab('guide')"
+                        class="tab-btn px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">
+                    Recycling Guide
+                </button>
+                <button onclick="showTab('materials')"
+                        class="tab-btn px-6 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                    Materials
+                </button>
+                <button onclick="showTab('tips')"
+                        class="tab-btn px-6 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                    Eco Tips
+                </button>
+                <button onclick="showTab('faq')"
+                        class="tab-btn px-6 py-2 rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                    FAQ
+                </button>
+            </div>
+        </div>
+
+        <!-- Guide Tab -->
+        <div id="guideTab" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h1 class="text-2xl font-bold mb-6">How to Recycle with Us</h1>
+                
+                <div class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Step 1: Sort Your Recyclables</h2>
+                            <p class="text-gray-600 mb-4">
+                                Separate your recyclables into different categories:
+                            </p>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Plastics (bottles, containers)</li>
+                                <li>Paper (newspapers, cardboard)</li>
+                                <li>Metal (cans, foil)</li>
+                                <li>Glass (bottles, jars)</li>
+                                <li>Electronics (phones, cables)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Step 2: Clean & Prepare</h2>
+                            <p class="text-gray-600 mb-4">
+                                Ensure all items are:
+                            </p>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Empty and rinsed</li>
+                                <li>Free from food contamination</li>
+                                <li>Dry and clean</li>
+                                <li>Labels removed (if possible)</li>
+                                <li>Crushed or flattened to save space</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-6">
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Step 3: Request Collection</h2>
+                            <p class="text-gray-600 mb-4">
+                                Use our platform to:
+                            </p>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Submit a collection request</li>
+                                <li>Choose convenient pickup time</li>
+                                <li>Add pickup location details</li>
+                                <li>Upload photos of materials</li>
+                                <li>Track request status</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Step 4: Earn Rewards</h2>
+                            <p class="text-gray-600 mb-4">
+                                Benefits of recycling with us:
+                            </p>
+                            <ul class="list-disc list-inside space-y-2 text-gray-600">
+                                <li>Earn points for each collection</li>
+                                <li>Track your environmental impact</li>
+                                <li>Redeem points for rewards</li>
+                                <li>Get special bonuses for regular recycling</li>
+                                <li>Share achievements with friends</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Materials Tab -->
+        <div id="materialsTab" class="tab-content hidden">
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Plastic -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">Plastic</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium mb-2">Accepted Items:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>PET bottles</li>
+                                <li>HDPE containers</li>
+                                <li>Clean plastic bags</li>
+                                <li>Food containers</li>
+                                <li>Bottle caps</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">Not Accepted:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Contaminated plastics</li>
+                                <li>PVC pipes</li>
+                                <li>Styrofoam</li>
+                                <li>Medical waste</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paper -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-yellow-600">Paper</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium mb-2">Accepted Items:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Newspapers</li>
+                                <li>Cardboard boxes</li>
+                                <li>Office paper</li>
+                                <li>Magazines</li>
+                                <li>Books</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">Not Accepted:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Waxed paper</li>
+                                <li>Food-soiled paper</li>
+                                <li>Tissues</li>
+                                <li>Laminated paper</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metal -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-600">Metal</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium mb-2">Accepted Items:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Aluminum cans</li>
+                                <li>Steel cans</li>
+                                <li>Metal bottle caps</li>
+                                <li>Clean foil</li>
+                                <li>Scrap metal</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">Not Accepted:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Paint cans</li>
+                                <li>Aerosol cans</li>
+                                <li>Batteries</li>
+                                <li>Electronics</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Glass -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">Glass</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium mb-2">Accepted Items:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Clear glass bottles</li>
+                                <li>Colored glass bottles</li>
+                                <li>Glass jars</li>
+                                <li>Glass containers</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">Not Accepted:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Window glass</li>
+                                <li>Mirrors</li>
+                                <li>Light bulbs</li>
+                                <li>Ceramics</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Electronics -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-purple-600">Electronics</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium mb-2">Accepted Items:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Mobile phones</li>
+                                <li>Computers</li>
+                                <li>Cables</li>
+                                <li>Small appliances</li>
+                                <li>Batteries</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-medium mb-2">Not Accepted:</h3>
+                            <ul class="list-disc list-inside text-gray-600">
+                                <li>Large appliances</li>
+                                <li>Damaged batteries</li>
+                                <li>Medical devices</li>
+                                <li>Security equipment</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips Tab -->
+        <div id="tipsTab" class="tab-content hidden">
+            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Daily Tips -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-green-600">Daily Eco Tips</h2>
+                    <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-start">
+                            <span class="mr-2">🌱</span>
+                            <span>Use reusable bags for shopping</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">💧</span>
+                            <span>Turn off taps while brushing teeth</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">⚡</span>
+                            <span>Unplug devices when not in use</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">♻️</span>
+                            <span>Sort waste at source</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🚰</span>
+                            <span>Use a reusable water bottle</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Reduce Tips -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-600">Reduce Waste</h2>
+                    <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-start">
+                            <span class="mr-2">📝</span>
+                            <span>Plan meals to reduce food waste</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🛍️</span>
+                            <span>Buy in bulk to reduce packaging</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">📱</span>
+                            <span>Go digital to reduce paper use</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🥤</span>
+                            <span>Avoid single-use items</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🔧</span>
+                            <span>Repair instead of replace</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Reuse Tips -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-purple-600">Creative Reuse</h2>
+                    <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-start">
+                            <span class="mr-2">🌺</span>
+                            <span>Turn jars into planters</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">📦</span>
+                            <span>Reuse boxes for storage</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">👕</span>
+                            <span>Donate usable items</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🎨</span>
+                            <span>Upcycle into art projects</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="mr-2">🧺</span>
+                            <span>Use cloth napkins instead of paper</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Tab -->
+        <div id="faqTab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+                
+                <div class="space-y-4">
+                    <div class="border-b pb-4">
+                        <h3 class="font-semibold mb-2">How does the collection process work?</h3>
+                        <p class="text-gray-600">
+                            Submit a request through our platform, and we'll match you with a nearby collector.
+                            They'll pick up your recyclables at your chosen time and location.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-semibold mb-2">How do I earn points?</h3>
+                        <p class="text-gray-600">
+                            Points are awarded based on the type and quantity of materials recycled.
+                            You'll also earn bonus points for consistent recycling and referrals.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-semibold mb-2">What can I do with my points?</h3>
+                        <p class="text-gray-600">
+                            Points can be redeemed for M-Pesa cash, airtime, or eco-friendly products
+                            from our partner stores.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-semibold mb-2">How do I track my environmental impact?</h3>
+                        <p class="text-gray-600">
+                            Your dashboard shows metrics like CO₂ reduced, trees saved, and water
+                            conserved based on your recycling activity.
+                        </p>
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-semibold mb-2">What happens to my recyclables?</h3>
+                        <p class="text-gray-600">
+                            Materials are sorted and sent to certified recycling facilities where they're
+                            processed into new products or raw materials.
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-semibold mb-2">How can I become a collector?</h3>
+                        <p class="text-gray-600">
+                            Register as a collector through our platform. You'll need to provide identification,
+                            vehicle information, and complete our verification process.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Show default tab
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Reset all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-green-600', 'text-white');
+                btn.classList.add('bg-white', 'text-gray-700');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Highlight selected tab button
+            event.target.classList.remove('bg-white', 'text-gray-700');
+            event.target.classList.add('bg-green-600', 'text-white');
+        }
+
+        // Initialize with guide tab
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('guide');
+        });
+    </script>
+</body>
+</html>

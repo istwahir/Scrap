@@ -1,0 +1,45 @@
+{
+    "name": "Kiambu Recycling & Scraps",
+    "short_name": "Kiambu Recycling",
+    "description": "Find recycling drop-off points and request pickups in Kiambu County",
+    "start_url": "/Scrap",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#16a34a",
+    "icons": [
+        {
+            "src": "/Scrap/images/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/Scrap/images/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "/Scrap/images/maskable_icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "orientation": "any",
+    "categories": ["utilities", "recycling", "lifestyle"],
+    "shortcuts": [
+        {
+            "name": "View Map",
+            "short_name": "Map",
+            "description": "View recycling points map",
+            "url": "/Scrap/map.html",
+            "icons": [{ "src": "/Scrap/images/map-icon-96x96.png", "sizes": "96x96" }]
+        },
+        {
+            "name": "Request Pickup",
+            "short_name": "Request",
+            "description": "Request recycling pickup",
+            "url": "/Scrap/request.html",
+            "icons": [{ "src": "/Scrap/images/request-icon-96x96.png", "sizes": "96x96" }]
+        }
+    ]
+}

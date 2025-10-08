@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Tracking - Kiambu Recycling & Scraps</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Custom styles -->
+    <style>
+        .status-online { color: #16a34a; }
+        .status-offline { color: #dc2626; }
+        .status-on_job { color: #2563eb; }
+        
+        .collector-popup {
+            min-width: 200px;
+        }
+        
+        #collectorsList::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        #collectorsList::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        #collectorsList::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        #collectorsList::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <!-- Navigation -->
+        <nav class="bg-green-600 text-white">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <a href="/" class="font-bold text-xl">Kiambu Recycling</a>
+                    <div id="navLinks" class="flex items-center space-x-4">
+                        <!-- Will be populated based on user role -->
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex">
+            <!-- Sidebar -->
+            <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+                <!-- Collector Controls (visible only to collectors) -->
+                <div id="collectorControls" class="p-4 border-b border-gray-200 hidden">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Status</label>
+                            <select id="statusSelect" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500">
+                                <option value="online">Available</option>
+                                <option value="on_job">On Job</option>
+                                <option value="offline">Offline</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-600">Your current location is being shared while you're online or on job.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collectors List -->
+                <div class="flex-1 overflow-y-auto" id="collectorsList">
+                    <div class="p-4">
+                        <h2 class="text-lg font-semibold mb-4">Active Collectors</h2>
+                        <div id="collectorsContainer" class="space-y-3">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div class="flex-1">
+                <div id="map" class="w-full h-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collector Tracker Script -->
+    <script src="/js/collector-tracker.js"></script>
+
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([-1.1712, 36.8356], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Initialize tracker
+        const tracker = new CollectorTracker(map, {
+            onCollectorClick: (collector) => {
+                // Center map on clicked collector
+                map.setView([collector.position.lat, collector.position.lng], 15);
+            },
+            onStatusChange: (collectors) => {
+                updateCollectorsList(collectors);
+            }
+        });
+
+        // Update collectors list in sidebar
+        function updateCollectorsList(collectors) {
+            const container = document.getElementById('collectorsContainer');
+            container.innerHTML = '';
+
+            if (collectors.length === 0) {
+                container.innerHTML = `
+                    <p class="text-gray-500 text-sm">No active collectors at the moment</p>
+                `;
+                return;
+            }
+
+            collectors.forEach(collector => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-sm p-4 cursor-pointer hover:bg-gray-50';
+                card.onclick = () => {
+                    map.setView([collector.position.lat, collector.position.lng], 15);
+                };
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="font-medium">${collector.name}</h3>
+                            <p class="text-sm text-gray-600">${collector.vehicle}</p>
+                            <p class="text-sm">
+                                <span class="status-${collector.status}">${collector.status}</span>
+                            </p>
+                        </div>
+                        <button onclick="requestCollection(${collector.id})"
+                                class="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
+                            Request
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <p class="text-xs text-gray-500">
+                            Materials: ${collector.materials.join(', ')}
+                        </p>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Handle collector status changes
+        document.getElementById('statusSelect').addEventListener('change', async function(e) {
+            try {
+                await tracker.updateStatus(e.target.value);
+            } catch (error) {
+                alert('Failed to update status. Please try again.');
+                // Reset select to current status
+                e.target.value = sessionStorage.getItem('collectorStatus') || 'online';
+            }
+        });
+
+        // Request collection from a collector
+        async function requestCollection(collectorId) {
+            if (!sessionStorage.getItem('user_id')) {
+                alert('Please log in to request a collection');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Redirect to request form with collector pre-selected
+            window.location.href = `/request.html?collector=${collectorId}`;
+        }
+
+        // Initialize page based on user role
+        function initializePage() {
+            const navLinks = document.getElementById('navLinks');
+            const collectorControls = document.getElementById('collectorControls');
+
+            if (sessionStorage.getItem('user_id')) {
+                if (sessionStorage.getItem('role') === 'collector') {
+                    // Show collector controls
+                    collectorControls.classList.remove('hidden');
+                    navLinks.innerHTML = `
+                        <a href="/collectors/dashboard.html" class="hover:text-green-200">Dashboard</a>
+                        <button onclick="logout()" class="hover:text-green-200">Logout</button>
+                    `;
+                } else {
+                    navLinks.innerHTML = `
+                        <a href="/dashboard.html" class="hover:text-green-200">Dashboard</a>
+                        <button onclick="logout()" class="hover:text-green-200">Logout</button>
+                    `;
+                }
+            } else {
+                navLinks.innerHTML = `
+                    <a href="/login.html" class="hover:text-green-200">Login</a>
+                    <a href="/collectors/register.html" class="hover:text-green-200">Become a Collector</a>
+                `;
+            }
+
+            // Start tracking
+            tracker.startTracking();
+        }
+
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/logout.php');
+                sessionStorage.clear();
+                window.location.href = '/';
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize on page load
+        initializePage();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            tracker.stopTracking();
+        });
+    </script>
+</body>
+</html>

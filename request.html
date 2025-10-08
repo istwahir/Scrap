@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Collection Request - Kiambu Recycling & Scraps</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        #map {
+            height: 300px;
+        }
+        .required:after {
+            content: " *";
+            color: red;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-green-600 text-white">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <a href="/dashboard.html" class="font-bold text-xl">Kiambu Recycling</a>
+                <button onclick="history.back()" class="hover:text-green-200">
+                    Back
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h1 class="text-2xl font-bold mb-6">New Collection Request</h1>
+                
+                <form id="requestForm" class="space-y-6">
+                    <!-- Materials Section -->
+                    <div>
+                        <label class="block mb-2 required">Materials to Recycle</label>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="materials[]" value="plastic" 
+                                       class="form-checkbox text-green-600">
+                                <span>Plastic</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="materials[]" value="paper" 
+                                       class="form-checkbox text-green-600">
+                                <span>Paper</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="materials[]" value="metal" 
+                                       class="form-checkbox text-green-600">
+                                <span>Metal</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="materials[]" value="glass" 
+                                       class="form-checkbox text-green-600">
+                                <span>Glass</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="checkbox" name="materials[]" value="electronics" 
+                                       class="form-checkbox text-green-600">
+                                <span>Electronics</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Weight Estimate -->
+                    <div>
+                        <label for="weight" class="block mb-2">Estimated Weight (kg)</label>
+                        <input type="number" id="weight" name="weight" min="1" max="1000" step="0.1"
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <!-- Pickup Address -->
+                    <div>
+                        <label for="address" class="block mb-2 required">Pickup Address</label>
+                        <textarea id="address" name="address" rows="2" required
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                  placeholder="Enter your pickup address"></textarea>
+                    </div>
+
+                    <!-- Map Location -->
+                    <div>
+                        <label class="block mb-2 required">Pickup Location</label>
+                        <div class="mb-2">
+                            <button type="button" id="locateBtn"
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                📍 Use My Location
+                            </button>
+                        </div>
+                        <div id="map" class="rounded-lg border"></div>
+                        <input type="hidden" id="lat" name="lat" required>
+                        <input type="hidden" id="lng" name="lng" required>
+                    </div>
+
+                    <!-- Pickup Date & Time -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="date" class="block mb-2 required">Preferred Date</label>
+                            <input type="date" id="date" name="date" required
+                                   min="" 
+                                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label for="time" class="block mb-2 required">Preferred Time</label>
+                            <select id="time" name="time" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">Select time slot</option>
+                                <option value="morning">Morning (8AM - 11AM)</option>
+                                <option value="afternoon">Afternoon (12PM - 3PM)</option>
+                                <option value="evening">Evening (4PM - 7PM)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div>
+                        <label for="notes" class="block mb-2">Additional Notes</label>
+                        <textarea id="notes" name="notes" rows="3"
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                  placeholder="Any special instructions or details about your recyclables"></textarea>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div>
+                        <label for="photo" class="block mb-2">Upload Photo</label>
+                        <input type="file" id="photo" name="photo" accept="image/*"
+                               class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <p class="text-sm text-gray-500 mt-1">
+                            Optional: Upload a photo of the materials to help collectors prepare
+                        </p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button type="submit"
+                                class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-xl">
+            <div class="flex items-center space-x-4">
+                <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-lg font-medium">Submitting request...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([-1.171315, 36.835372], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').min = today;
+
+        // Handle map clicks
+        map.on('click', function(e) {
+            updateMarker(e.latlng);
+        });
+
+        // Handle location button
+        document.getElementById('locateBtn').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const latlng = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        updateMarker(latlng);
+                        map.setView(latlng, 16);
+                        
+                        // Reverse geocode to get address
+                        reverseGeocode(latlng);
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        alert('Could not get your location. Please try again or mark it on the map.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser');
+            }
+        });
+
+        // Update marker position
+        function updateMarker(latlng) {
+            if (marker) {
+                marker.setLatLng(latlng);
+            } else {
+                marker = L.marker(latlng).addTo(map);
+            }
+            
+            document.getElementById('lat').value = latlng.lat;
+            document.getElementById('lng').value = latlng.lng;
+        }
+
+        // Reverse geocoding
+        async function reverseGeocode(latlng) {
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`
+                );
+                const data = await response.json();
+                
+                if (data.display_name) {
+                    document.getElementById('address').value = data.display_name;
+                }
+            } catch (error) {
+                console.error('Reverse geocoding failed:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validate form
+            const materials = document.querySelectorAll('input[name="materials[]"]:checked');
+            if (materials.length === 0) {
+                alert('Please select at least one material type');
+                return;
+            }
+            
+            if (!marker) {
+                alert('Please select a pickup location on the map');
+                return;
+            }
+            
+            // Show loading overlay
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+            
+            // Create FormData
+            const formData = new FormData(e.target);
+            
+            // Add photo if selected
+            const photoInput = document.getElementById('photo');
+            if (photoInput.files.length > 0) {
+                formData.append('photo', photoInput.files[0]);
+            }
+            
+            try {
+                const response = await fetch('/api/create_request.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert('Request submitted successfully!');
+                    window.location.href = `/request.html?id=${data.request_id}`;
+                } else {
+                    alert(data.message || 'Failed to submit request');
+                }
+            } catch (error) {
+                console.error('Request submission failed:', error);
+                alert('Failed to submit request. Please try again.');
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+        });
+
+        // Auto-fill drop-off point if provided in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const dropoffId = urlParams.get('dropoff');
+        if (dropoffId) {
+            fetch(`/api/get_dropoff.php?id=${dropoffId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const latlng = {
+                            lat: parseFloat(data.dropoff.lat),
+                            lng: parseFloat(data.dropoff.lng)
+                        };
+                        updateMarker(latlng);
+                        map.setView(latlng, 16);
+                        document.getElementById('address').value = data.dropoff.address;
+                    }
+                })
+                .catch(error => console.error('Failed to load drop-off point:', error));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Rewards - Kiambu Recycling & Scraps</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom styles -->
+    <style>
+        .reward-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .reward-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .points-badge {
+            background: linear-gradient(135deg, #16a34a, #059669);
+        }
+    </style>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#16a34a">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="/" class="flex-shrink-0">
+                        <h1 class="text-2xl font-bold text-green-600">Kiambu Recycling</h1>
+                    </a>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard.html" class="text-gray-700 hover:text-green-600 transition duration-200">Dashboard</a>
+                    <a href="/map.html" class="text-gray-700 hover:text-green-600 transition duration-200">Map</a>
+                    <a href="/request.html" class="text-gray-700 hover:text-green-600 transition duration-200">New Request</a>
+                    <a href="/guide.html" class="text-gray-700 hover:text-green-600 transition duration-200">Guide</a>
+
+                    <div class="relative">
+                        <button onclick="toggleProfileMenu()" class="flex items-center text-gray-700 hover:text-green-600 transition duration-200">
+                            <span id="userName">Loading...</span>
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div id="profileMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="/profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
+                            <a href="/history.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Request History</a>
+                            <a href="/rewards.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Rewards</a>
+                            <hr class="my-1">
+                            <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">My Rewards</h1>
+                <p class="text-gray-600">Track your points and redeem rewards for your recycling efforts</p>
+            </div>
+
+            <!-- Points Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Available Points</p>
+                            <p id="availablePoints" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Earned</p>
+                            <p id="totalEarned" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Redeemed</p>
+                            <p id="totalRedeemed" class="text-3xl font-bold text-purple-600">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redemption Options -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-6">Redeem Your Points</h2>
+                <div id="redemptionOptions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Options will be loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-6">Recent Transactions</h2>
+                <div id="recentTransactions" class="space-y-4">
+                    <!-- Transactions will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redemption Modal -->
+    <div id="redemptionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900">Confirm Redemption</h3>
+                    <button onclick="closeRedemptionModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="redemptionDetails" class="mb-6">
+                    <!-- Redemption details will be populated here -->
+                </div>
+
+                <div class="flex space-x-4">
+                    <button onclick="closeRedemptionModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
+                        Cancel
+                    </button>
+                    <button onclick="confirmRedemption()" id="confirmBtn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRedemptionOption = null;
+
+        // Check authentication
+        if (!sessionStorage.getItem('user_id')) {
+            window.location.href = '/login.html';
+        }
+
+        // Load user data
+        document.getElementById('userName').textContent = sessionStorage.getItem('user_name') || 'User';
+
+        // Load rewards data
+        async function loadRewardsData() {
+            try {
+                const response = await fetch('/api/get_rewards.php', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('user_id')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('availablePoints').textContent = data.stats.available_points;
+                    document.getElementById('totalEarned').textContent = data.stats.total_earned;
+                    document.getElementById('totalRedeemed').textContent = data.stats.total_redeemed;
+
+                    displayRedemptionOptions();
+                    displayRecentTransactions(data.stats.recent_transactions);
+                }
+            } catch (error) {
+                console.error('Failed to load rewards data:', error);
+            }
+        }
+
+        // Display redemption options
+        function displayRedemptionOptions() {
+            const options = [
+                {
+                    id: 'mpesa_50',
+                    name: 'M-Pesa Airtime - KSh 50',
+                    points_required: 500,
+                    type: 'airtime',
+                    value: 50,
+                    icon: '📱'
+                },
+                {
+                    id: 'mpesa_100',
+                    name: 'M-Pesa Airtime - KSh 100',
+                    points_required: 950,
+                    type: 'airtime',
+                    value: 100,
+                    icon: '📱'
+                },
+                {
+                    id: 'mpesa_200',
+                    name: 'M-Pesa Airtime - KSh 200',
+                    points_required: 1800,
+                    type: 'airtime',
+                    value: 200,
+                    icon: '📱'
+                },
+                {
+                    id: 'cash_100',
+                    name: 'M-Pesa Cash - KSh 100',
+                    points_required: 1000,
+                    type: 'cash',
+                    value: 100,
+                    icon: '💰'
+                },
+                {
+                    id: 'cash_200',
+                    name: 'M-Pesa Cash - KSh 200',
+                    points_required: 1900,
+                    type: 'cash',
+                    value: 200,
+                    icon: '💰'
+                }
+            ];
+
+            const container = document.getElementById('redemptionOptions');
+            const availablePoints = parseInt(document.getElementById('availablePoints').textContent);
+
+            container.innerHTML = options.map(option => {
+                const canRedeem = availablePoints >= option.points_required;
+                return `
+                    <div class="reward-card border rounded-lg p-6 ${canRedeem ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'}">
+                        <div class="text-center mb-4">
+                            <div class="text-4xl mb-2">${option.icon}</div>
+                            <h3 class="font-semibold text-lg">${option.name}</h3>
+                            <p class="text-sm text-gray-600 mt-1">${option.points_required} points required</p>
+                        </div>
+                        <button onclick="showRedemptionModal('${option.id}')"
+                                class="w-full py-2 px-4 rounded-lg font-medium transition duration-200 ${
+                                    canRedeem
+                                        ? 'bg-green-600 text-white hover:bg-green-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                }"
+                                ${canRedeem ? '' : 'disabled'}>
+                            ${canRedeem ? 'Redeem Now' : 'Insufficient Points'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Display recent transactions
+        function displayRecentTransactions(transactions) {
+            const container = document.getElementById('recentTransactions');
+
+            if (!transactions || transactions.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No transactions yet. Start recycling to earn points!</p>';
+                return;
+            }
+
+            container.innerHTML = transactions.map(transaction => {
+                const isPositive = transaction.points > 0;
+                const date = new Date(transaction.created_at).toLocaleDateString();
+                return `
+                    <div class="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <p class="font-medium">${transaction.description || 'Points ' + (isPositive ? 'earned' : 'redeemed')}</p>
+                            <p class="text-sm text-gray-500">${date}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}">
+                                ${isPositive ? '+' : ''}${transaction.points} points
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show redemption modal
+        function showRedemptionModal(optionId) {
+            const options = {
+                'mpesa_50': { name: 'M-Pesa Airtime - KSh 50', points: 500, value: 50, type: 'airtime' },
+                'mpesa_100': { name: 'M-Pesa Airtime - KSh 100', points: 950, value: 100, type: 'airtime' },
+                'mpesa_200': { name: 'M-Pesa Airtime - KSh 200', points: 1800, value: 200, type: 'airtime' },
+                'cash_100': { name: 'M-Pesa Cash - KSh 100', points: 1000, value: 100, type: 'cash' },
+                'cash_200': { name: 'M-Pesa Cash - KSh 200', points: 1900, value: 200, type: 'cash' }
+            };
+
+            const option = options[optionId];
+            if (!option) return;
+
+            currentRedemptionOption = optionId;
+
+            const details = document.getElementById('redemptionDetails');
+            details.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="text-6xl mb-2">${option.type === 'airtime' ? '📱' : '💰'}</div>
+                    <h4 class="text-xl font-semibold">${option.name}</h4>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span>Points Required:</span>
+                        <span class="font-semibold text-red-600">-${option.points}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>You will receive:</span>
+                        <span class="font-semibold text-green-600">KSh ${option.value}</span>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 text-center">
+                    This redemption cannot be undone. The amount will be sent to your registered phone number.
+                </p>
+            `;
+
+            document.getElementById('redemptionModal').classList.remove('hidden');
+        }
+
+        // Close redemption modal
+        function closeRedemptionModal() {
+            document.getElementById('redemptionModal').classList.add('hidden');
+            currentRedemptionOption = null;
+        }
+
+        // Confirm redemption
+        async function confirmRedemption() {
+            if (!currentRedemptionOption) return;
+
+            const btn = document.getElementById('confirmBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/api/redeem_reward.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('user_id')}`
+                    },
+                    body: JSON.stringify({
+                        option_id: currentRedemptionOption
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showNotification('Redemption successful! You will receive your reward shortly.', 'success');
+                    closeRedemptionModal();
+                    loadRewardsData(); // Refresh data
+                } else {
+                    showNotification(data.message || 'Redemption failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirm';
+            }
+        }
+
+        // Utility functions
+        function toggleProfileMenu() {
+            const menu = document.getElementById('profileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function logout() {
+            fetch('/api/logout.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
+                sessionStorage.clear();
+                window.location.href = '/';
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+                type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+            } text-white`;
+
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        ×
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Initialize
+        loadRewardsData();
+
+        // PWA support
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js');
+            });
+        }
+    </script>
+</body>
+</html>
