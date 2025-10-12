@@ -4,11 +4,11 @@ require_once __DIR__ . '/controllers/AuthController.php';
 
 $auth = new AuthController();
 
-// If user is already authenticated, redirect to dashboard
-// if ($auth->isAuthenticated()) {
-//     header('Location: /scrap/dashboard.html');
-//     exit;
-// }
+ 
+if ($auth->isAuthenticated()) {
+    header('Location: /scrap/dashboard.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

@@ -1,11 +1,29 @@
-<?php
-$requireAuth = false;
-$pageTitle = 'Login - Kiambu Recycling & Scraps';
-include 'includes/header.php';
-?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kiambu Recycling & Scraps</title>
 
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Custom styles -->
+    <style>
+        .auth-bg {
+            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+        }
+        .auth-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+    </style>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#16a34a">
+    <link rel="manifest" href="/Scrap/public/manifest.json">
+</head>
+<body class="auth-bg min-h-screen flex items-center justify-center p-4">
     <div class="auth-card rounded-2xl shadow-2xl p-8 w-full max-w-md">
         <!-- Header -->
         <div class="text-center mb-8">
@@ -83,7 +101,7 @@ include 'includes/header.php';
     <script>
         // Check if already authenticated
         if (sessionStorage.getItem('user_id')) {
-            window.location.href = '/Scrap/dashboard.html';
+            window.location.href = '/Scrap/dashboard.php';
         }
 
         // Show error message
@@ -143,7 +161,7 @@ include 'includes/header.php';
                     sessionStorage.setItem('email', data.user.email);
 
                     // Redirect to dashboard
-                    window.location.href = '/Scrap/dashboard.html';
+                    window.location.href = '/Scrap/dashboard.php';
                 } else {
                     showError(data.message || 'Login failed');
                 }
@@ -170,5 +188,5 @@ include 'includes/header.php';
             });
         }
     </script>
-
-<?php include 'includes/footer.php'; ?>
+</body>
+</html>
