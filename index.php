@@ -61,8 +61,8 @@ if ($auth->isAuthenticated()) {
                     <a href="#how-it-works" class="text-gray-700 hover:text-green-600 transition duration-200">How It Works</a>
                     <a href="#impact" class="text-gray-700 hover:text-green-600 transition duration-200">Impact</a>
                     <a href="/guide.html" class="text-gray-700 hover:text-green-600 transition duration-200">Guide</a>
-                    <a href="/scrap/login.html" class="text-gray-700 hover:text-green-600 transition duration-200">Login</a>
-                    <a href="/scrap/signup.html" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                    <a href="/scrap/login.php" class="text-gray-700 hover:text-green-600 transition duration-200">Login</a>
+                    <a href="/scrap/signup.php" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-200">
                         Get Started
                     </a>
                 </div>

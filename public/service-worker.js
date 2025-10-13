@@ -4,9 +4,9 @@ const OFFLINE_URL = '/Scrap/offline.html';
 const ASSETS_TO_CACHE = [
     '/Scrap/index.php',
     '/Scrap/offline.html',
-    '/Scrap/map.html',
-    '/Scrap/login.html',
-    '/Scrap/request.html',
+    '/Scrap/map.php',
+    '/Scrap/login.php',
+    '/Scrap/request.php',
     '/Scrap/reward.html'
 ];
 
@@ -136,7 +136,7 @@ self.addEventListener('notificationclick', event => {
 
     if (event.action === 'view') {
         event.waitUntil(
-            clients.openWindow('/requests.html')
+            clients.openWindow('/requests.php')
         );
     }
 });

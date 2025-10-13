@@ -61,10 +61,10 @@ if (!isset($requireAuth) || $requireAuth) {
                 <div class="flex items-center space-x-4">
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <!-- Authenticated user menu -->
-                        <a href="/Scrap/dashboard.html" class="text-gray-700 hover:text-green-600 transition duration-200">Dashboard</a>
-                        <a href="/Scrap/map.html" class="text-gray-700 hover:text-green-600 transition duration-200">Map</a>
-                        <a href="/Scrap/request.html" class="text-gray-700 hover:text-green-600 transition duration-200">New Request</a>
-                        <a href="/Scrap/guide.html" class="text-gray-700 hover:text-green-600 transition duration-200">Guide</a>
+                        <a href="/Scrap/dashboard.php" class="text-gray-700 hover:text-green-600 transition duration-200">Dashboard</a>
+                        <a href="/Scrap/map.php" class="text-gray-700 hover:text-green-600 transition duration-200">Map</a>
+                        <a href="/Scrap/request.php" class="text-gray-700 hover:text-green-600 transition duration-200">New Request</a>
+                        <a href="/Scrap/guide.php" class="text-gray-700 hover:text-green-600 transition duration-200">Guide</a>
 
                         <div class="relative">
                             <button onclick="toggleProfileMenu()" class="flex items-center text-gray-700 hover:text-green-600 transition duration-200">
@@ -75,7 +75,7 @@ if (!isset($requireAuth) || $requireAuth) {
                             </button>
 
                             <div id="profileMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                <a href="/Scrap/profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
+                                <a href="/Scrap/profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
                                 <a href="/Scrap/history.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Request History</a>
                                 <a href="/Scrap/rewards.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Rewards</a>
                                 <hr class="my-1">

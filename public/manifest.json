@@ -31,14 +31,14 @@
             "name": "View Map",
             "short_name": "Map",
             "description": "View recycling points map",
-            "url": "/Scrap/map.html",
+            "url": "/Scrap/map.php",
             "icons": [{ "src": "/Scrap/images/map-icon-96x96.png", "sizes": "96x96" }]
         },
         {
             "name": "Request Pickup",
             "short_name": "Request",
             "description": "Request recycling pickup",
-            "url": "/Scrap/request.html",
+            "url": "/Scrap/request.php",
             "icons": [{ "src": "/Scrap/images/request-icon-96x96.png", "sizes": "96x96" }]
         }
     ]

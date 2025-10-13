@@ -219,7 +219,7 @@ include 'includes/header.php';
     <script>
         // Check authentication
         if (!sessionStorage.getItem('user_id')) {
-            window.location.href = '/login.html';
+            window.location.href = '/Scrap/login.php';
         }
 
         // Load user data
@@ -355,7 +355,7 @@ include 'includes/header.php';
 
         // Logout function
         function logout() {
-            fetch('/Scrap/api/logout.php')
+            fetch('/Scrap/logout.php')
                 .then(() => {
                     sessionStorage.clear();
                     window.location.href = '/Scrap/login.php';
