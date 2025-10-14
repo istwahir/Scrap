@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
     '/Scrap/map.php',
     '/Scrap/login.php',
     '/Scrap/request.php',
-    '/Scrap/reward.html'
+    '/Scrap/reward.php'
 ];
 
 // Install service worker and cache static assets

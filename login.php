@@ -1,3 +1,12 @@
+<?php
+// Redirect to login if not authenticated
+$currentFile = basename($_SERVER['PHP_SELF']);
+if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFile !== 'index.php') {
+    header('Location: /Scrap/login.php');
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

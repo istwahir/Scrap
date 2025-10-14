@@ -530,7 +530,7 @@ $initials = $initials ?: 'U';
                             </div>
                         </div>
 
-                        <a href="reward.html" class="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
+                        <a href="rewards.php" class="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
                             Browse reward catalog
                             <span aria-hidden="true">→</span>
                         </a>

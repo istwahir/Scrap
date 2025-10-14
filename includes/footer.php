@@ -1,6 +1,6 @@
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-gray-300 py-12 mt-auto">
-        <div class="container mx-auto px-4">
+<!-- Footer -->
+    <footer class="glass-nav border-t border-white/10 text-slate-200 py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <div>
                     <h3 class="text-white text-lg font-semibold mb-4">Kiambu Recycling</h3>
@@ -38,9 +38,6 @@
                         <a href="#" class="text-gray-400 hover:text-white transition duration-200">📷</a>
                     </div>
                 </div>
-            </div>
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
-                <p>&copy; <?php echo date('Y'); ?> Kiambu Recycling & Scraps. All rights reserved.</p>
             </div>
         </div>
     </footer>

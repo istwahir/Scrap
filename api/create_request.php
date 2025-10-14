@@ -1,8 +1,21 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1); // Temporarily enabled for debugging
+ini_set('log_errors', 1);
+
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 
 header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
 
 // Initialize auth controller
 $auth = new AuthController();
@@ -28,6 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     $db = getDBConnection();
     
     // Validate required fields
@@ -83,139 +101,158 @@ try {
         exit;
     }
     
-    // Handle file upload
-    $photoUrl = null;
+    // Handle photo upload
+    $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($fileInfo, $_FILES['photo']['tmp_name']);
-        
-        if (!in_array($mimeType, ALLOWED_FILE_TYPES)) {
-            http_response_code(400);
+        try {
+            $uploadDir = __DIR__ . '/../uploads/';
+            if (!is_dir($uploadDir)) {
+                if (!mkdir($uploadDir, 0755, true)) {
+                    throw new Exception('Failed to create upload directory');
+                }
+            }
+            
+            // Check if upload directory is writable
+            if (!is_writable($uploadDir)) {
+                throw new Exception('Upload directory is not writable');
+            }
+            
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+            $detectedType = finfo_file($fileInfo, $_FILES['photo']['tmp_name']);
+            finfo_close($fileInfo);
+            
+            if (!in_array($detectedType, $allowedTypes)) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'Invalid file type. Only JPEG, PNG, and GIF are allowed.'
+                ]);
+                exit;
+            }
+            
+            $maxSize = 5 * 1024 * 1024; // 5MB
+            if ($_FILES['photo']['size'] > $maxSize) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'File size too large. Maximum size is 5MB.'
+                ]);
+                exit;
+            }
+            
+            // Get proper extension based on detected type
+            $extensionMap = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif'
+            ];
+            $extension = $extensionMap[$detectedType] ?? 'jpg';
+            
+            $fileName = uniqid() . '_' . time() . '.' . $extension;
+            $fullPath = $uploadDir . $fileName;
+            
+            if (!move_uploaded_file($_FILES['photo']['tmp_name'], $fullPath)) {
+                throw new Exception('Failed to move uploaded file');
+            }
+            
+            // Store relative path for database
+            $photoPath = 'uploads/' . $fileName;
+            
+        } catch (Exception $uploadError) {
+            error_log('Photo upload error: ' . $uploadError->getMessage());
+            http_response_code(500);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Invalid file type. Allowed types: ' . implode(', ', ALLOWED_FILE_TYPES)
+                'message' => 'Photo upload failed: ' . $uploadError->getMessage()
             ]);
             exit;
         }
+    } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        // Handle upload errors
+        $uploadErrors = [
+            UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive',
+            UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive',
+            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
+            UPLOAD_ERR_EXTENSION => 'Upload stopped by extension'
+        ];
         
-        if ($_FILES['photo']['size'] > MAX_FILE_SIZE) {
-            http_response_code(400);
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'File too large. Maximum size: ' . (MAX_FILE_SIZE / 1024 / 1024) . 'MB'
-            ]);
-            exit;
-        }
+        $errorMessage = $uploadErrors[$_FILES['photo']['error']] ?? 'Unknown upload error';
         
-        $extension = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
-        $filename = uniqid() . '.' . $extension;
-        $uploadDir = __DIR__ . '/../public/uploads/requests/';
-        
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-        
-        if (move_uploaded_file($_FILES['photo']['tmp_name'], $uploadDir . $filename)) {
-            $photoUrl = 'uploads/requests/' . $filename;
-        }
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Upload error: ' . $errorMessage
+        ]);
+        exit;
     }
     
-    // Start transaction
+    // Start database transaction
     $db->beginTransaction();
     
-    // Insert request
-    $stmt = $db->prepare(
-        "INSERT INTO collection_requests (
-            user_id, 
-            materials, 
-            estimated_weight, 
-            pickup_address, 
-            lat, 
-            lng, 
-            pickup_date, 
-            pickup_time,
-            photo_url,
-            notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    );
+    // Get user ID from session
+    $userId = $_SESSION['user_id'];
     
+    // Convert time slot to actual time
+    $timeSlotMap = [
+        'morning' => '09:00:00',
+        'afternoon' => '14:00:00',
+        'evening' => '17:00:00'
+    ];
+    
+    $timeSlot = $_POST['time'];
+    $pickupTime = isset($timeSlotMap[$timeSlot]) ? $timeSlotMap[$timeSlot] : '09:00:00';
+    
+    // Handle collector_id and dropoff_point_id - set to NULL if empty
+    $collectorId = (!empty($_POST['collector_id'])) ? intval($_POST['collector_id']) : null;
+    $dropoffPointId = (!empty($_POST['dropoff_point_id'])) ? intval($_POST['dropoff_point_id']) : null;
+    
+    // Insert collection request
+    $stmt = $db->prepare("
+        INSERT INTO collection_requests (
+            user_id, collector_id, dropoff_point_id, materials, photo_url, estimated_weight, 
+            pickup_address, pickup_date, pickup_time, notes, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    ");
+    
+    // This was failing because sanitizeInput() wasn't defined:
+    $materialsString = implode(',', $materials);
+    $estimatedWeight = isset($_POST['weight']) ? floatval($_POST['weight']) : null;
+    $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : null;
+
     $stmt->execute([
-        $_SESSION['user_id'],
-        implode(',', $materials),
-        $_POST['weight'] ?? null,
-        $_POST['address'],
-        $lat,
-        $lng,
+        $userId,
+        $collectorId,
+        $dropoffPointId,
+        $materialsString,
+        $photoPath,
+        $estimatedWeight,
+        sanitizeInput($_POST['address']), // This was also failing
         $pickupDate,
-        $_POST['time'],
-        $photoUrl,
-        $_POST['notes'] ?? null
+        $pickupTime,
+        $notes
     ]);
     
     $requestId = $db->lastInsertId();
     
-    // Find nearest drop-off point
-    $stmt = $db->prepare(
-        "SELECT id, (
-            6371 * acos(
-                cos(radians(?)) * 
-                cos(radians(lat)) * 
-                cos(radians(lng) - radians(?)) + 
-                sin(radians(?)) * 
-                sin(radians(lat))
-            )
-        ) as distance 
-        FROM dropoff_points 
-        WHERE status = 'active' 
-        HAVING distance <= 10
-        ORDER BY distance 
-        LIMIT 1"
-    );
-    
-    $stmt->execute([$lat, $lng, $lat]);
-    $dropoff = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($dropoff) {
-        $stmt = $db->prepare(
-            "UPDATE collection_requests 
-             SET dropoff_point_id = ? 
-             WHERE id = ?"
-        );
-        $stmt->execute([$dropoff['id'], $requestId]);
-    }
-    
-    // Find available collector
-    $stmt = $db->prepare(
-        "SELECT c.id 
-         FROM collectors c 
-         LEFT JOIN collection_requests r ON c.id = r.collector_id 
-         WHERE c.status = 'approved' 
-         GROUP BY c.id 
-         HAVING COUNT(r.id) < 5
-         ORDER BY RAND() 
-         LIMIT 1"
-    );
-    
-    $stmt->execute();
-    $collector = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if ($collector) {
-        $stmt = $db->prepare(
-            "UPDATE collection_requests 
-             SET collector_id = ?, status = 'assigned' 
-             WHERE id = ?"
-        );
-        $stmt->execute([$collector['id'], $requestId]);
-    }
+    // Award points for creating request (5 points)
+    $rewardStmt = $db->prepare("
+        INSERT INTO rewards (user_id, points, activity_type, reference_id) 
+        VALUES (?, 5, 'collection', ?)
+    ");
+    $rewardStmt->execute([$userId, $requestId]);
     
     // Commit transaction
     $db->commit();
     
-    // Return success response
     echo json_encode([
         'status' => 'success',
         'message' => 'Request created successfully',
-        'request_id' => $requestId
+        'request_id' => $requestId,
+        'points_earned' => 5
     ]);
     
 } catch (Exception $e) {
@@ -224,10 +261,11 @@ try {
         $db->rollBack();
     }
     
-    error_log($e->getMessage());
+    error_log("Create request error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to create request'
+        'message' => 'Failed to create request: ' . $e->getMessage()
     ]);
 }
+?>

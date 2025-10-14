@@ -27,9 +27,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    // Initialize auth controller and logout
-    $auth = new AuthController();
-    $auth->logout();
+    // Start session if not already started
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Clear all session variables
+    session_unset();
+    
+    // Destroy the session
+    session_destroy();
+    
+    // Clear the session cookie
+    if (isset($_COOKIE[session_name()])) {
+        setcookie(session_name(), '', time() - 3600, '/');
+    }
 
     echo json_encode([
         'status' => 'success',

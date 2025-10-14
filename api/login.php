@@ -45,6 +45,12 @@ try {
     $result = $auth->login($email, $password);
 
     if ($result['status'] === 'success') {
+        // Set session
+        $_SESSION['user_id'] = $result['user']['id'];
+        $_SESSION['user_role'] = $result['user']['role'];
+        $_SESSION['email'] = $email;
+        $_SESSION['user_name'] = $result['user']['name'];
+
         echo json_encode($result);
     } else {
         http_response_code(400);

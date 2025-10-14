@@ -334,6 +334,7 @@ require_once 'config.php';
 
         map.on('click', (event) => {
             updateMarker(event.latlng);
+            reverseGeocode(event.latlng); // Update address input when map is clicked
         });
 
         locateBtn.addEventListener('click', () => {
@@ -368,19 +369,25 @@ require_once 'config.php';
 
         async function reverseGeocode(latlng) {
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`);
+                // Use a CORS-friendly geocoding service or fallback to coordinates
+                const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latlng.lat}&longitude=${latlng.lng}&localityLanguage=en`);
                 const data = await response.json();
-                if (data.display_name) {
-                    addressInput.value = data.display_name;
+                if (data.locality && data.countryName) {
+                    addressInput.value = `${data.locality}, ${data.countryName}`;
+                } else {
+                    // Fallback to coordinates if geocoding fails
+                    addressInput.value = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
                 }
             } catch (error) {
                 console.error('Reverse geocoding failed:', error);
+                // Fallback to coordinates
+                addressInput.value = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
             }
         }
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-
+            
             const selectedMaterials = document.querySelectorAll('input[name="materials[]"]:checked');
             if (!selectedMaterials.length) {
                 alert('Please select at least one material type.');
@@ -400,7 +407,7 @@ require_once 'config.php';
             }
 
             try {
-                const response = await fetch('/api/create_request.php', {
+                const response = await fetch('/Scrap/api/create_request.php', {
                     method: 'POST',
                     body: formData
                 });
@@ -408,13 +415,13 @@ require_once 'config.php';
 
                 if (data.status === 'success') {
                     alert('Request submitted successfully!');
-                    window.location.href = `/request.html?id=${data.request_id}`;
+                    window.location.href = `/Scrap/request.php?id=${data.request_id}`;
                 } else {
                     alert(data.message || 'Failed to submit request.');
                 }
             } catch (error) {
                 console.error('Request submission failed:', error);
-                alert('Failed to submit request. Please try again.');
+                alert('Network error. Please try again.');
             } finally {
                 loadingOverlay.classList.add('hidden');
             }
@@ -438,6 +445,11 @@ require_once 'config.php';
                 })
                 .catch(error => console.error('Failed to load drop-off point:', error));
         }
+
+        map.on('click', function(e) {
+            var latlng = e.latlng;
+            document.getElementById('arrivalInput').value = latlng.lat + ', ' + latlng.lng;
+        });
     </script>
 </body>
 </html>

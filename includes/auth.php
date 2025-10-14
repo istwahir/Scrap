@@ -9,8 +9,11 @@ $auth = new AuthController();
 if (!$auth->isAuthenticated()) {
     // Redirect to login page for protected routes
     $currentPath = $_SERVER['REQUEST_URI'];
-    if (!in_array(basename($currentPath), ['/Scrap/login.php', '/Scrap/signup.php', '/Scrap/index.php', ''])) {
-        header('Location: /Scrap/login.php?redirect=' . urlencode($currentPath));
+    $currentFile = basename(parse_url($currentPath, PHP_URL_PATH));
+    
+    // Only redirect if NOT already on login, signup, or index pages
+    if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFile !== 'index.php' && $currentFile !== '') {
+        header('Location: /Scrap/login.php');
         exit;
     }
 } else {
