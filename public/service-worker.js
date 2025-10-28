@@ -110,8 +110,8 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
     const options = {
         body: event.data.text(),
-        icon: '/images/icon-192x192.png',
-        badge: '/images/notification-badge.png',
+    icon: '/Scrap/public/images/markers/truck.svg',
+    badge: '/Scrap/public/images/markers/truck.svg',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),

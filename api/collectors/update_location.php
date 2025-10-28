@@ -54,21 +54,46 @@ try {
         // Start transaction
         $pdo->beginTransaction();
 
-        // Update current location in collectors table
-        $stmt = $pdo->prepare("
-            UPDATE collectors 
-            SET current_latitude = :latitude,
-                current_longitude = :longitude,
-                last_active = NOW(),
-                active_status = :status
-            WHERE id = :id
-        ");
-        $stmt->execute([
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'status' => $data['status'] ?? $collector['active_status'],
-            'id' => $collector['id']
-        ]);
+        // Check if collectors table has current_latitude/current_longitude
+        $hasInlinePosition = false;
+        try {
+            $chk = $pdo->prepare("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'collectors' AND COLUMN_NAME IN ('current_latitude','current_longitude')");
+            $chk->execute(['db' => DB_NAME]);
+            $row = $chk->fetch(PDO::FETCH_ASSOC);
+            $hasInlinePosition = isset($row['cnt']) && (int)$row['cnt'] >= 2;
+        } catch (Throwable $t) {
+            $hasInlinePosition = false;
+        }
+
+        // Update collectors table (conditionally include lat/lng)
+        if ($hasInlinePosition) {
+            $stmt = $pdo->prepare("
+                UPDATE collectors 
+                SET current_latitude = :latitude,
+                    current_longitude = :longitude,
+                    last_active = NOW(),
+                    active_status = :status
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'status' => $data['status'] ?? $collector['active_status'],
+                'id' => $collector['id']
+            ]);
+        } else {
+            // Fallback: update only status/last_active
+            $stmt = $pdo->prepare("
+                UPDATE collectors 
+                SET last_active = NOW(),
+                    active_status = :status
+                WHERE id = :id
+            ");
+            $stmt->execute([
+                'status' => $data['status'] ?? $collector['active_status'],
+                'id' => $collector['id']
+            ]);
+        }
 
         // Insert into location history
         $stmt = $pdo->prepare("

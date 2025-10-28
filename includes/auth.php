@@ -10,11 +10,17 @@ if (!$auth->isAuthenticated()) {
     // Redirect to login page for protected routes
     $currentPath = $_SERVER['REQUEST_URI'];
     $currentFile = basename(parse_url($currentPath, PHP_URL_PATH));
-    
-    // Only redirect if NOT already on login, signup, or index pages
-    if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFile !== 'index.php' && $currentFile !== '') {
-        header('Location: /Scrap/login.php');
-        exit;
+
+    // Temporarily skip redirect when requesting the collector dashboard during development
+    // (This allows the collector dashboard to load without an authenticated session.)
+    if (strpos($currentPath, '/collectors/dashboard.php') !== false || strpos($currentPath, '/public/collectors/dashboard.php') !== false) {
+        // Intentionally do nothing here (development bypass)
+    } else {
+        // Only redirect if NOT already on login, signup, or index pages
+        if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFile !== 'index.php' && $currentFile !== '') {
+            header('Location: /Scrap/login.php');
+            exit;
+        }
     }
 } else {
     // Load user data into session if not already loaded

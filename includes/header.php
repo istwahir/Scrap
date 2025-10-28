@@ -31,7 +31,7 @@ if (session_status() === PHP_SESSION_NONE) {
     </style>
     <meta name="theme-color" content="#16a34a">
     <link rel="manifest" href="/Scrap/public/manifest.json">
-    <link rel="apple-touch-icon" href="/Scrap/images/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/Scrap/public/images/markers/truck.svg">
     <?php if (isset($extraHead)) echo $extraHead; ?>
 </head>
 <body class="hero-gradient min-h-screen bg-slate-950 text-slate-100 antialiased">

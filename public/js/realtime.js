@@ -93,7 +93,7 @@ function showNotification(notification) {
     if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(notification.title, {
             body: notification.message,
-            icon: '/images/icon-192x192.png'
+            icon: '/Scrap/public/images/markers/truck.svg'
         });
     }
 }

@@ -6,6 +6,8 @@ define('TIMEZONE', 'Africa/Nairobi');
 
 // Email configuration
 define('MOCK_EMAIL', true); // Set to false in production to send real emails
+// Mock SMS flag for development — set to false in production if SMS sending is enabled
+define('MOCK_SMS', true);
 
 // Database Configuration
 define('DB_HOST', 'localhost');

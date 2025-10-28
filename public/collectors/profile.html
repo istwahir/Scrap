@@ -199,7 +199,7 @@
         // Load profile data
         async function loadProfileData() {
             try {
-                const response = await fetch('/api/collectors/profile.php');
+                const response = await fetch('/Scrap/api/collectors/profile.php');
                 const data = await response.json();
                 
                 if (data.status === 'success') {
@@ -336,7 +336,7 @@
         // Handle history period changes
         document.getElementById('historyPeriod').addEventListener('change', async function(e) {
             try {
-                const response = await fetch(`/api/collectors/history.php?period=${e.target.value}`);
+                const response = await fetch(`/Scrap/api/collectors/history.php?period=${e.target.value}`);
                 const data = await response.json();
                 
                 if (data.status === 'success') {

@@ -99,7 +99,7 @@ try {
     $stmt->execute([$collector['id']]);
     $earningsTrend = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get materials breakdown
+    // Get materials breakdown (last 30 days)
     $stmt = $pdo->prepare("
         SELECT 
             material_type,
@@ -111,6 +111,41 @@ try {
     ");
     $stmt->execute([$collector['id']]);
     $materialsBreakdown = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Additional analytics
+    // Requests trend (last 14 days) for this collector (accepted + completed + pending)
+    $stmt = $pdo->prepare("SELECT DATE(created_at) as day, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 14 DAY) GROUP BY DATE(created_at) ORDER BY day ASC");
+    $stmt->execute([$collector['id']]);
+    $requestsTrend = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Status distribution for current outstanding + recent (last 30 days) requests
+    $stmt = $pdo->prepare("SELECT status, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY status");
+    $stmt->execute([$collector['id']]);
+    $statusDistribution = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Material distribution for requests (not just completed collections) last 30 days
+    $stmt = $pdo->prepare("SELECT material_type, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY material_type");
+    $stmt->execute([$collector['id']]);
+    $requestMaterials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Fill missing days with zero for requests trend (ensure 14-day continuity)
+    $trendMap = [];
+    foreach ($requestsTrend as $row) { $trendMap[$row['day']] = (int)$row['cnt']; }
+    $trendLabels = [];
+    $trendValues = [];
+    for ($i = 13; $i >= 0; $i--) {
+        $d = date('Y-m-d', strtotime("-{$i} day"));
+        $trendLabels[] = date('M j', strtotime($d));
+        $trendValues[] = $trendMap[$d] ?? 0;
+    }
+
+    // Status distribution arrays
+    $statusLabels = array_map(function($r) { return $r['status']; }, $statusDistribution);
+    $statusValues = array_map(function($r) { return (int)$r['cnt']; }, $statusDistribution);
+
+    // Request materials distribution arrays
+    $reqMatLabels = array_map(function($r) { return $r['material_type']; }, $requestMaterials);
+    $reqMatValues = array_map(function($r) { return (int)$r['cnt']; }, $requestMaterials);
 
     // Format response data
     $response = [
@@ -168,6 +203,25 @@ try {
                 'values' => array_map(function($item) {
                     return $item['count'];
                 }, $materialsBreakdown)
+            ]
+        ],
+        'analytics' => [
+            // NOTE: Added 'analytics' section to response with:
+            //  analytics.requests_trend: { labels: [last 14 days], values: counts }
+            //  analytics.status_distribution: { labels: statuses, values: counts }
+            //  analytics.request_materials: { labels: material types (requests), values: counts }
+            // This augments existing 'earnings' object.
+            'requests_trend' => [
+                'labels' => $trendLabels,
+                'values' => $trendValues
+            ],
+            'status_distribution' => [
+                'labels' => $statusLabels,
+                'values' => $statusValues
+            ],
+            'request_materials' => [
+                'labels' => $reqMatLabels,
+                'values' => $reqMatValues
             ]
         ]
     ];

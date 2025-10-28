@@ -14,25 +14,25 @@ class CollectorTracker {
         // Initialize collector markers with custom icons
         this.icons = {
             truck: L.icon({
-                iconUrl: '/images/markers/truck.png',
+                iconUrl: '/Scrap/public/images/markers/truck.png',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             pickup: L.icon({
-                iconUrl: '/images/markers/pickup.png',
+                iconUrl: '/Scrap/public/images/markers/pickup.png',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             tuktuk: L.icon({
-                iconUrl: '/images/markers/tuktuk.png',
+                iconUrl: '/Scrap/public/images/markers/tuktuk.png',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             motorcycle: L.icon({
-                iconUrl: '/images/markers/motorcycle.png',
+                iconUrl: '/Scrap/public/images/markers/motorcycle.png',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
@@ -46,7 +46,13 @@ class CollectorTracker {
             this.stopTracking();
         }
 
-        this.eventSource = new EventSource('/api/collectors/get_locations.php');
+        // Try the expected base path first; if it fails (some pages may request without /Scrap), fallback to the alternative path
+        try {
+            this.eventSource = new EventSource('/Scrap/api/collectors/get_locations.php');
+        } catch (e) {
+            console.warn('Failed to open EventSource to /Scrap, trying /api path', e);
+            try { this.eventSource = new EventSource('/api/collectors/get_locations.php'); } catch (e2) { console.error('Failed to open fallback EventSource', e2); }
+        }
 
         this.eventSource.addEventListener('update', (event) => {
             const data = JSON.parse(event.data);
@@ -55,10 +61,36 @@ class CollectorTracker {
             }
         });
 
+        // Enhanced error handling: if primary path fails, attempt a fallback without /Scrap once.
+        this._esTriedFallback = false;
         this.eventSource.addEventListener('error', (event) => {
             console.error('Tracking error:', event);
+            // If we haven't tried fallback yet and current URL looks like /Scrap, try fallback
+            try {
+                const url = this.eventSource.url || (this.eventSource && this.eventSource._url) || '';
+                if (!this._esTriedFallback && url.indexOf('/Scrap/') !== -1) {
+                    console.warn('Attempting fallback EventSource URL without /Scrap');
+                    this._esTriedFallback = true;
+                    try { this.eventSource.close(); } catch(e){}
+                    try {
+                        this.eventSource = new EventSource('/api/collectors/get_locations.php');
+                        // Rebind handlers
+                        this.eventSource.addEventListener('update', (ev) => {
+                            const data = JSON.parse(ev.data);
+                            if (data.status === 'success') this.updateMarkers(data.collectors);
+                        });
+                        // Let the same error handler manage further errors (it will not try fallback again)
+                    } catch (e2) {
+                        console.error('Fallback ES construction failed', e2);
+                        this.stopTracking();
+                        setTimeout(() => this.startTracking(), 5000);
+                    }
+                    return;
+                }
+            } catch (ex) { console.error('Error in ES fallback logic', ex); }
+
+            // Default: stop tracking and attempt reconnection after a delay
             this.stopTracking();
-            // Try to reconnect after 5 seconds
             setTimeout(() => this.startTracking(), 5000);
         });
 
@@ -171,7 +203,7 @@ class CollectorTracker {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
                     try {
-                        const response = await fetch('/api/collectors/update_location.php', {
+                        const response = await fetch('/Scrap/api/collectors/update_location.php', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -212,7 +244,7 @@ class CollectorTracker {
 
         try {
             const position = await this.getCurrentPosition();
-            const response = await fetch('/api/collectors/update_location.php', {
+            const response = await fetch('/Scrap/api/collectors/update_location.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

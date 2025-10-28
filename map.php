@@ -477,7 +477,7 @@ require_once 'config.php';
                 clearTimeout(collectorReconnectTimeout);
             }
 
-            collectorsEventSource = new EventSource('/api/collectors/get_locations.php');
+            collectorsEventSource = new EventSource('/Scrap/api/collectors/get_locations.php');
 
             collectorsEventSource.addEventListener('update', event => {
                 try {

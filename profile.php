@@ -193,6 +193,20 @@ if (!empty($user['created_at'])) {
 $nameParts = preg_split('/\s+/', trim($user['name'] ?? '')) ?: [];
 $initials = strtoupper(mb_substr($nameParts[0] ?? '', 0, 1) . mb_substr($nameParts[1] ?? '', 0, 1));
 $initials = $initials ?: 'U';
+
+// Check if user is already a collector
+$isCollector = false;
+$collectorStatus = null;
+try {
+    $cstmt = $conn->prepare('SELECT id, active_status FROM collectors WHERE user_id = :id LIMIT 1');
+    $cstmt->execute([':id' => $user_id]);
+    if ($row = $cstmt->fetch(PDO::FETCH_ASSOC)) {
+        $isCollector = true;
+        $collectorStatus = $row['active_status'] ?? null;
+    }
+} catch (Throwable $e) {
+    $isCollector = false;
+}
 ?>
 
 <!DOCTYPE html>
@@ -502,6 +516,41 @@ $initials = $initials ?: 'U';
                 </div>
 
                 <div class="space-y-8">
+                    <!-- Collector CTA -->
+                    <div class="glass-card rounded-3xl border border-white/10 p-8">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-semibold text-white">
+                                    <?php echo $isCollector ? 'Collector tools' : 'Become a collector'; ?>
+                                </h2>
+                                <p class="mt-1 text-sm text-slate-300/80">
+                                    <?php if ($isCollector): ?>
+                                        Access your collector dashboard and manage pickups.
+                                        <?php if ($collectorStatus): ?>
+                                            <span class="ml-1 rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.25em] text-white/70">Status: <?php echo htmlspecialchars($collectorStatus); ?></span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        Register to collect recyclables in your area and start earning.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            <span class="rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-[0.25em] text-white/70">Collector</span>
+                        </div>
+
+                        <?php if ($isCollector): ?>
+                            <div class="mt-6 flex flex-wrap gap-3">
+                                <a href="public/collectors/dashboard.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">Open dashboard <span aria-hidden="true">→</span></a>
+                                <a href="public/collectors/requests.php" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-emerald-300/50 hover:text-emerald-200">View requests</a>
+                            </div>
+                        <?php else: ?>
+                            <div class="mt-6">
+                                <a href="public/collectors/register.php" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
+                                    Register as a collector
+                                    <span aria-hidden="true">→</span>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     <div class="glass-card rounded-3xl border border-white/10 p-8">
                         <div class="flex items-center محسوس justify-between gap-4">
                             <div>

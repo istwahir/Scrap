@@ -180,8 +180,12 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
                     sessionStorage.setItem('user_role', data.user.role);
                     sessionStorage.setItem('email', data.user.email);
 
-                    // Redirect to dashboard
-                    window.location.href = '/Scrap/dashboard.php';
+                    // Redirect based on role
+                    if (data.user.role === 'collector') {
+                        window.location.href = '/Scrap/public/collectors/dashboard.php';
+                    } else {
+                        window.location.href = '/Scrap/dashboard.php';
+                    }
                 } else {
                     showError(data.message || 'Login failed');
                 }
