@@ -1,10 +1,10 @@
 <?php
-require_once 'config.php';
-require_once 'includes/auth.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 // Redirect to login if not authenticated
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: /Scrap/views/auth/login.php');
     exit;
 }
 
@@ -71,7 +71,7 @@ function statusLabel(string $status): string {
     };
 }
 
-include 'includes/header.php';
+include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="min-h-screen hero-gradient">
@@ -127,19 +127,19 @@ include 'includes/header.php';
 
         <!-- Quick Actions -->
         <div class="mt-8 flex flex-wrap gap-4 justify-center">
-            <a href="request.php" class="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02] no-underline">
+            <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02] no-underline">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
                 Schedule Pickup
             </a>
-            <a href="/Scrap/rewards.php" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60 no-underline">
+            <a href="/Scrap/views/citizens/rewards.php" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60 no-underline">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                 </svg>
                 View Rewards
             </a>
-            <a href="/Scrap/profile.php" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60 no-underline">
+            <a href="/Scrap/views/citizens/profile.php" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60 no-underline">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
@@ -149,7 +149,7 @@ include 'includes/header.php';
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>
 
 <script>
 async function logout() {
@@ -157,7 +157,7 @@ async function logout() {
         const response = await fetch('/Scrap/api/logout.php', { method: 'POST' });
         const data = await response.json();
         if (data.status === 'success') {
-            window.location.href = '/Scrap/login.php';
+            window.location.href = '/Scrap/views/auth/login.php';
         } else {
             alert('Logout failed: ' + (data.message || 'Unknown error'));
         }

@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'config.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -234,7 +234,7 @@ try {
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased">
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/../../includes/header.php'; ?>
 
     <header class="hero-gradient relative overflow-hidden pb-28">
         <div class="absolute inset-0 grid-fade opacity-25"></div>
@@ -307,7 +307,7 @@ try {
                                             <span><?php echo htmlspecialchars($nextPickup['pickup_address']); ?></span>
                                         </div>
                                     <?php endif; ?>
-                                    <a href="request.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">
+                                    <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">
                                         Manage requests
                                         <span aria-hidden="true">→</span>
                                     </a>
@@ -315,7 +315,7 @@ try {
                             <?php else : ?>
                                 <div class="space-y-4 text-sm text-emerald-100/80">
                                     <p>No pickups queued right now. Schedule one to keep earning rewards.</p>
-                                    <a href="request.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">
+                                    <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">
                                         Book a new pickup
                                         <span aria-hidden="true">→</span>
                                     </a>
@@ -469,7 +469,7 @@ try {
                             <h2 class="text-xl font-semibold text-white">Recent recycling activity</h2>
                             <p class="mt-1 text-sm text-slate-300/80">Track the latest pickups and their status. Rebook in one tap.</p>
                         </div>
-                        <a href="request.php" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:border-emerald-300/50 hover:text-emerald-200">
+                        <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/70 transition hover:border-emerald-300/50 hover:text-emerald-200">
                             View all
                         </a>
                     </div>
@@ -499,7 +499,7 @@ try {
                                             <span class="rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] <?php echo statusBadgeStyles($request['status'] ?? 'pending'); ?>">
                                                 <?php echo statusLabel($request['status'] ?? 'pending'); ?>
                                             </span>
-                                            <a href="request.php" class="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-emerald-300/50 hover:text-emerald-200">
+                                            <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-[0.3em] text-white/70 transition hover:border-emerald-300/50 hover:text-emerald-200">
                                                 Rebook
                                                 <span aria-hidden="true">↻</span>
                                             </a>
@@ -539,12 +539,12 @@ try {
 
                         <?php if ($isCollector): ?>
                             <div class="mt-6 flex flex-wrap gap-3">
-                                <a href="public/collectors/dashboard.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">Open dashboard <span aria-hidden="true">→</span></a>
-                                <a href="public/collectors/requests.php" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-emerald-300/50 hover:text-emerald-200">View requests</a>
+                                <a href="/Scrap/views/collectors/dashboard.php" class="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400">Open dashboard <span aria-hidden="true">→</span></a>
+                                <a href="/Scrap/views/collectors/requests.php" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-emerald-300/50 hover:text-emerald-200">View requests</a>
                             </div>
                         <?php else: ?>
                             <div class="mt-6">
-                                <a href="public/collectors/register.php" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
+                                <a href="/Scrap/views/collectors/register.php" class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
                                     Register as a collector
                                     <span aria-hidden="true">→</span>
                                 </a>
@@ -579,7 +579,7 @@ try {
                             </div>
                         </div>
 
-                        <a href="rewards.php" class="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
+                        <a href="/Scrap/views/citizens/rewards.php" class="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-100">
                             Browse reward catalog
                             <span aria-hidden="true">→</span>
                         </a>
@@ -608,7 +608,7 @@ try {
         </section>
     </main>
 
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
     <script>
         function animateCounters() {

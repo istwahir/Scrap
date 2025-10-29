@@ -1,6 +1,6 @@
 <?php
-require_once 'config.php';
-require_once 'includes/auth.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 // Check if user is authenticated
 if (!isset($_SESSION['user_id'])) {
@@ -82,14 +82,14 @@ function formatDateTime($date, $time = null) {
     }
 }
 
-include 'includes/header.php';
+include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="min-h-screen hero-gradient">
     <div class="container mx-auto px-4 py-8">
         <div class="mb-8">
             <div class="flex items-center gap-4 mb-4">
-                <a href="history.php" class="inline-flex items-center gap-2 px-4 py-2 border border-white/20 text-white rounded-lg hover:border-emerald-300 transition">
+                <a href="/Scrap/views/citizens/history.php" class="inline-flex items-center gap-2 px-4 py-2 border border-white/20 text-white rounded-lg hover:border-emerald-300 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
@@ -239,7 +239,7 @@ include 'includes/header.php';
                             Download Receipt
                         </button>
                         <?php endif; ?>
-                        <a href="request.php" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition text-center">
+                        <a href="/Scrap/views/citizens/request.php" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:shadow-lg transition text-center">
                             Create New Request
                         </a>
                     </div>
@@ -338,4 +338,4 @@ async function submitEditForm(event) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>

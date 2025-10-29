@@ -1,6 +1,6 @@
 <?php
-require_once 'config.php';
-require_once 'includes/auth.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 // Check if user is authenticated
 if (!isset($_SESSION['user_id'])) {
@@ -109,7 +109,7 @@ function formatDateTime($date, $time = null) {
     }
 }
 
-include 'includes/header.php';
+include __DIR__ . '/../../includes/header.php';
 ?>
 
 <div class="min-h-screen hero-gradient">
@@ -268,7 +268,7 @@ include 'includes/header.php';
                 </div>
                 <h3 class="text-xl font-semibold text-white mb-2">No Requests Yet</h3>
                 <p class="text-emerald-100/80 mb-6">You haven't made any collection requests yet. Start recycling today!</p>
-                <a href="request.php" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition duration-200 font-medium">
+                <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition duration-200 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
@@ -280,19 +280,19 @@ include 'includes/header.php';
 
         <!-- Quick Actions -->
         <div class="mt-8 flex flex-wrap gap-4 justify-center">
-            <a href="request.php" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition duration-200 font-medium">
+            <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition duration-200 font-medium">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 New Request
             </a>
-            <a href="dashboard.php" class="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white rounded-xl hover:border-emerald-300 transition">
+            <a href="/Scrap/views/citizens/dashboard.php" class="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white rounded-xl hover:border-emerald-300 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
                 </svg>
                 Dashboard
             </a>
-            <a href="rewards.php" class="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white rounded-xl hover:border-emerald-300 transition">
+            <a href="/Scrap/views/citizens/rewards.php" class="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white rounded-xl hover:border-emerald-300 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                 </svg>
@@ -419,7 +419,7 @@ async function logout() {
         const response = await fetch('/Scrap/api/logout.php', { method: 'POST' });
         const data = await response.json();
         if (data.status === 'success') {
-            window.location.href = '/Scrap/login.php';
+            window.location.href = '/Scrap/views/auth/login.php';
         } else {
             alert('Logout failed: ' + (data.message || 'Unknown error'));
         }
@@ -439,4 +439,4 @@ document.addEventListener('click', function(e) {
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>

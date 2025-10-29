@@ -30,6 +30,19 @@ try {
         $hasInlinePosition = false;
     }
 
+    // Determine best timestamp/ordering column for collector_locations
+    $locationTimeColumn = null;
+    try {
+        $colChk = $pdo->prepare("SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'collector_locations' AND COLUMN_NAME IN ('recorded_at','created_at','timestamp','updated_at') ORDER BY FIELD(COLUMN_NAME,'recorded_at','created_at','timestamp','updated_at') LIMIT 1");
+        $colChk->execute(['db' => DB_NAME]);
+        $colRow = $colChk->fetch(PDO::FETCH_ASSOC);
+        if ($colRow && !empty($colRow['COLUMN_NAME'])) {
+            $locationTimeColumn = $colRow['COLUMN_NAME'];
+        }
+    } catch (Throwable $t) {
+        $locationTimeColumn = null;
+    }
+
     // Keep connection alive
     while (true) {
         // Clear output buffer
@@ -58,6 +71,29 @@ try {
             ";
         } else {
             // fallback: use last known position from collector_locations
+            if ($locationTimeColumn) {
+                $innerJoin = "
+                    SELECT cl1.collector_id, cl1.latitude, cl1.longitude
+                    FROM collector_locations cl1
+                    INNER JOIN (
+                        SELECT collector_id, MAX(`$locationTimeColumn`) AS max_time
+                        FROM collector_locations
+                        GROUP BY collector_id
+                    ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.`$locationTimeColumn` = cl2.max_time
+                ";
+            } else {
+                // Fallback to MAX(id) if no timestamp-like column exists
+                $innerJoin = "
+                    SELECT cl1.collector_id, cl1.latitude, cl1.longitude
+                    FROM collector_locations cl1
+                    INNER JOIN (
+                        SELECT collector_id, MAX(id) AS max_id
+                        FROM collector_locations
+                        GROUP BY collector_id
+                    ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.id = cl2.max_id
+                ";
+            }
+
             $sql = "
                 SELECT
                     c.id,
@@ -72,13 +108,7 @@ try {
                 FROM collectors c
                 JOIN collector_applications ca ON c.application_id = ca.id
                 LEFT JOIN (
-                    SELECT cl1.collector_id, cl1.latitude, cl1.longitude
-                    FROM collector_locations cl1
-                    INNER JOIN (
-                        SELECT collector_id, MAX(recorded_at) AS max_time
-                        FROM collector_locations
-                        GROUP BY collector_id
-                    ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.recorded_at = cl2.max_time
+                    $innerJoin
                 ) loc ON loc.collector_id = c.id
                 LEFT JOIN collector_materials cm ON ca.id = cm.application_id
                 LEFT JOIN collector_areas car ON ca.id = car.application_id

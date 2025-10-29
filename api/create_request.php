@@ -105,7 +105,7 @@ try {
     $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         try {
-            $uploadDir = __DIR__ . '/../uploads/';
+            $uploadDir = __DIR__ . '/../public/uploads/';
             if (!is_dir($uploadDir)) {
                 if (!mkdir($uploadDir, 0755, true)) {
                     throw new Exception('Failed to create upload directory');
@@ -158,7 +158,7 @@ try {
             }
             
             // Store relative path for database
-            $photoPath = 'uploads/' . $fileName;
+            $photoPath = 'public/uploads/' . $fileName;
             
         } catch (Exception $uploadError) {
             error_log('Photo upload error: ' . $uploadError->getMessage());

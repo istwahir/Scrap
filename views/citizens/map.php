@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'config.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,7 +35,7 @@ require_once 'config.php';
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased">
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/../../includes/header.php'; ?>
 
     <header class="hero-gradient relative overflow-hidden pb-24">
         <div class="absolute inset-0 grid-fade opacity-20"></div>
@@ -59,7 +59,7 @@ require_once 'config.php';
                         <button id="locateBtn" class="inline-flex items-center gap-3 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-6 py-3 text-sm font-semibold text-emerald-100 transition hover:border-emerald-300/70">
                             <span aria-hidden="true">📍</span> Use my location
                         </button>
-                        <a href="request.php" class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02]">
+                        <a href="/Scrap/views/citizens/request.php" class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-2xl shadow-emerald-500/30 transition hover:scale-[1.02]">
                             Schedule collection
                             <span aria-hidden="true">→</span>
                         </a>
@@ -150,7 +150,7 @@ require_once 'config.php';
                                 Community-led drop points earn neighbourhood bonus multipliers every quarter.
                             </li>
                         </ul>
-                        <a href="guide.php#materials" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200 transition hover:text-emerald-100">
+                        <a href="/Scrap/views/citizens/guide.php#materials" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200 transition hover:text-emerald-100">
                             Review preparation rules
                             <span aria-hidden="true">→</span>
                         </a>
@@ -210,7 +210,7 @@ require_once 'config.php';
         </section>
     </main>
 
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>

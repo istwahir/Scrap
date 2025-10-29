@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'config.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,7 +34,7 @@ require_once 'config.php';
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased">
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/../../includes/header.php'; ?>
 
     <header class="hero-gradient relative overflow-hidden pb-24">
         <div class="absolute inset-0 grid-fade opacity-15"></div>
@@ -59,7 +59,7 @@ require_once 'config.php';
                             Create request
                             <span aria-hidden="true">↓</span>
                         </a>
-                        <a href="guide.php#steps" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60">
+                        <a href="/Scrap/views/citizens/guide.php#steps" class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-semibold text-white transition hover:border-emerald-300/60">
                             View prep checklist
                             <span aria-hidden="true">→</span>
                         </a>
@@ -115,7 +115,7 @@ require_once 'config.php';
                                 Morning slots fill up fast—book 24 hours ahead to secure your preferred window.
                             </li>
                         </ul>
-                        <a href="guide.php#materials" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200 transition hover:text-emerald-100">
+                        <a href="/Scrap/views/citizens/guide.php#materials" class="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200 transition hover:text-emerald-100">
                             Material sorting guide
                             <span aria-hidden="true">→</span>
                         </a>
@@ -285,7 +285,7 @@ require_once 'config.php';
         </div>
     </div>
 
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>

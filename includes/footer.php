@@ -42,28 +42,8 @@
         </div>
     </footer>
 
-    <!-- PWA Service Worker Registration -->
+    <!-- Global utilities script -->
     <script>
-        // PWA installation
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
-        // Service worker registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Scrap/public/service-worker.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('ServiceWorker registration failed:', error);
-                    });
-            });
-        }
-
         // Global utility functions
         function showNotification(message, type = 'info') {
             // Create notification element

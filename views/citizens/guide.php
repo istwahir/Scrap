@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'config.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -27,7 +27,7 @@ require_once 'config.php';
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 antialiased">
-    <?php include 'includes/header.php'; ?>
+    <?php include __DIR__ . '/../../includes/header.php'; ?>
 
     <header class="hero-gradient relative overflow-hidden pb-20">
         <div class="absolute inset-0 grid-fade opacity-20"></div>
@@ -236,7 +236,7 @@ require_once 'config.php';
         </div>
     </div>
 
-    <?php include 'includes/footer.php'; ?>
+    <?php include __DIR__ . '/../../includes/footer.php'; ?>
 
     <script>
         const materialData = {

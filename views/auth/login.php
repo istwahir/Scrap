@@ -1,9 +1,16 @@
 <?php
-// Redirect to login if not authenticated
-$currentFile = basename($_SERVER['PHP_SELF']);
-if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFile !== 'index.php') {
-    header('Location: /Scrap/login.php');
-    exit;
+// Redirect authenticated users to their dashboard
+session_start();
+if (isset($_SESSION['user_id'])) {
+    $role = $_SESSION['role'] ?? 'user';
+    if ($role === 'admin') {
+        header('Location: /Scrap/views/admin/dashboard.php');
+    } elseif ($role === 'collector') {
+        header('Location: /Scrap/views/collectors/dashboard.php');
+    } else {
+        header('Location: /Scrap/views/citizens/dashboard.php');
+    }
+    exit();
 }
 ?>
 
@@ -106,7 +113,7 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
         <div class="relative mt-10 text-center">
             <p class="text-slate-300/80 text-sm">
                 Don't have an account?
-                <a href="/Scrap/signup.php" class="text-emerald-300 hover:text-emerald-200 font-semibold transition duration-200">
+                <a href="/Scrap/views/auth/signup.php" class="text-emerald-300 hover:text-emerald-200 font-semibold transition duration-200">
                     Sign up here
                 </a>
             </p>
@@ -119,11 +126,6 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
     </div>
 
     <script>
-        // Check if already authenticated
-        if (sessionStorage.getItem('user_id')) {
-            window.location.href = '/Scrap/dashboard.php';
-        }
-
         // Show error message
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
@@ -181,10 +183,13 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
                     sessionStorage.setItem('email', data.user.email);
 
                     // Redirect based on role
-                    if (data.user.role === 'collector') {
-                        window.location.href = '/Scrap/public/collectors/dashboard.php';
+                    if (data.user.role === 'admin') {
+                        window.location.href = '/Scrap/views/admin/dashboard.php';
+                    } else if (data.user.role === 'collector') {
+                        window.location.href = '/Scrap/views/collectors/dashboard.php';
                     } else {
-                        window.location.href = '/Scrap/dashboard.php';
+                        // Regular user/citizen dashboard
+                        window.location.href = '/Scrap/views/citizens/dashboard.php';
                     }
                 } else {
                     showError(data.message || 'Login failed');

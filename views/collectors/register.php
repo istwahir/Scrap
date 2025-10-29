@@ -49,7 +49,7 @@
                 <div class="flex h-14 items-center justify-between">
                     <a href="/Scrap/" class="font-semibold">Kiambu Recycling</a>
                     <div class="flex items-center gap-4 text-sm">
-                        <a href="/Scrap/login.php" class="hover:text-emerald-200">Login</a>
+                        <a href="/Scrap/views/auth/login.php" class="hover:text-emerald-200">Login</a>
                     </div>
                 </div>
             </div>
@@ -94,24 +94,24 @@
                                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <label class="text-sm">
                                             <span class="text-white/80">Full Name</span>
-                                            <input type="text" name="fullName" required class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"/>
+                                            <input type="text" name="fullName" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">Phone Number</span>
-                                            <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$" placeholder="+254700000000" class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"/>
+                                            <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$" placeholder="+254700000000" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">ID Number</span>
-                                            <input type="text" name="idNumber" required class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"/>
+                                            <input type="text" name="idNumber" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">Date of Birth</span>
-                                            <input type="date" name="dateOfBirth" required class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"/>
+                                            <input type="date" name="dateOfBirth" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                         </div>
                         <label class="block text-sm">
                                         <span class="text-white/80">Residential Address</span>
-                                        <textarea name="address" required rows="2" class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"></textarea>
+                                        <textarea name="address" required rows="2" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"></textarea>
                         </label>
                                     <div class="rounded-2xl border border-white/10 bg-white/5">
                                         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-3 py-2">
@@ -127,7 +127,7 @@
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                                             <label class="text-sm">
                                                 <span class="text-white/80">Vehicle Type</span>
-                                                <select name="vehicleType" required class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30">
+                                                <select name="vehicleType" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-0">
                                     <option value="">Select Vehicle Type</option>
                                     <option value="truck">Truck</option>
                                     <option value="pickup">Pickup</option>
@@ -137,62 +137,62 @@
                             </label>
                                             <label class="text-sm">
                                                 <span class="text-white/80">Vehicle Registration</span>
-                                                <input type="text" name="vehicleReg" required placeholder="e.g., KAA 123B" class="mt-1 w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-white shadow-inner shadow-black/20 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-500/30"/>
+                                                <input type="text" name="vehicleReg" required placeholder="e.g., KAA 123B" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                         </div>
 
                                         <div class="text-sm text-slate-200">
                                             <div class="mb-1 font-medium">Collection Areas</div>
-                                            <div class="mt-2 flex flex-wrap gap-2" id="areasContainer">
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Kiambu Town" class="chip-input hidden"/>
-                                                    Kiambu Town
+                                            <div class="mt-4 grid gap-3 sm:grid-cols-3" id="areasContainer">
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Kiambu Town" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Kiambu Town</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Thika" class="chip-input hidden"/>
-                                                    Thika
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Thika" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Thika</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Ruiru" class="chip-input hidden"/>
-                                                    Ruiru
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Ruiru" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Ruiru</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Juja" class="chip-input hidden"/>
-                                                    Juja
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Juja" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Juja</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Githunguri" class="chip-input hidden"/>
-                                                    Githunguri
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Githunguri" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Githunguri</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="areas[]" value="Limuru" class="chip-input hidden"/>
-                                                    Limuru
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="areas[]" value="Limuru" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Limuru</span>
                                                 </label>
                             </div>
                         </div>
 
                                         <div class="text-sm text-slate-200">
                                             <div class="mb-1 font-medium">Materials Collected</div>
-                                            <div class="mt-2 flex flex-wrap gap-2" id="materialsContainer">
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="materials[]" value="plastic" class="chip-input hidden"/>
-                                                    Plastic
+                                            <div class="mt-4 grid gap-3 sm:grid-cols-3" id="materialsContainer">
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="materials[]" value="plastic" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Plastic</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="materials[]" value="paper" class="chip-input hidden"/>
-                                                    Paper
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="materials[]" value="paper" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Paper</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="materials[]" value="metal" class="chip-input hidden"/>
-                                                    Metal
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="materials[]" value="metal" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Metal</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="materials[]" value="glass" class="chip-input hidden"/>
-                                                    Glass
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="materials[]" value="glass" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Glass</span>
                                                 </label>
-                                                <label class="chip chip-label cursor-pointer border border-white/15 bg-white/5 text-slate-200">
-                                                    <input type="checkbox" name="materials[]" value="electronics" class="chip-input hidden"/>
-                                                    Electronics
+                                                <label class="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 transition hover:border-emerald-400/60">
+                                                    <input type="checkbox" name="materials[]" value="electronics" class="h-4 w-4 rounded border-white/30 bg-transparent text-emerald-500 focus:ring-emerald-400">
+                                                    <span>Electronics</span>
                                                 </label>
                             </div>
                         </div>
@@ -255,38 +255,7 @@
         </main>
 
         <script>
-            // Chip selection handler
-            function initChipSelection() {
-                document.querySelectorAll('.chip-label').forEach(label => {
-                    const checkbox = label.querySelector('.chip-input');
-                    if (!checkbox) return;
-
-                    // Update label styling based on checkbox state
-                    function updateChipStyle() {
-                        if (checkbox.checked) {
-                            label.classList.remove('border-white/15', 'bg-white/5', 'text-slate-200');
-                            label.classList.add('border-emerald-300/50', 'bg-emerald-500/10', 'text-emerald-200');
-                        } else {
-                            label.classList.remove('border-emerald-300/50', 'bg-emerald-500/10', 'text-emerald-200');
-                            label.classList.add('border-white/15', 'bg-white/5', 'text-slate-200');
-                        }
-                    }
-
-                    // Ensure click on label toggles only its own checkbox
-                    label.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        checkbox.checked = !checkbox.checked;
-                        updateChipStyle();
-                    });
-
-                    // Also listen to programmatic changes (keyboard, etc.)
-                    checkbox.addEventListener('change', updateChipStyle);
-
-                    // Initialize on page load
-                    updateChipStyle();
-                });
-            }
+            // (chips removed) — using native checkboxes styled like request page
 
             // Initialize map
             const map = L.map('addressMap').setView([-1.1712, 36.8356], 12);
@@ -413,12 +382,25 @@
 
                 try {
                     const response = await fetch('/Scrap/api/collectors/register.php', { method: 'POST', body: formData });
-                    const result = await response.json();
-                    if (result.status === 'success') {
+                    let result = null;
+                    const contentType = response.headers.get('content-type') || '';
+                    try {
+                        if (contentType.includes('application/json')) {
+                            result = await response.json();
+                        } else {
+                            const text = await response.text();
+                            result = { status: response.ok ? 'success' : 'error', message: text };
+                        }
+                    } catch (parseErr) {
+                        result = { status: 'error', message: 'Unexpected response from server.' };
+                    }
+
+                    if (response.ok && result.status === 'success') {
                         alert('Registration submitted successfully! We will review your application and contact you soon.');
                         window.location.href = '/Scrap/profile.php';
                     } else {
-                        showAlert(result.message || 'Failed to submit registration.');
+                        console.error('Register API error:', result);
+                        showAlert(result && result.message ? result.message : 'Failed to submit registration. Please review all fields and try again.');
                     }
                 } catch (err) {
                     console.error(err);
@@ -429,7 +411,6 @@
             });
 
             // Init
-            initChipSelection();
             showStep(1);
         </script>
     </body>

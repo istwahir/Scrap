@@ -41,7 +41,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <a href="/Scrap/dashboard.php" class="flex-shrink-0 flex items-center space-x-2">
+                    <a href="/Scrap/index.php" class="flex-shrink-0 flex items-center space-x-2">
                         <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
@@ -54,37 +54,36 @@ if (session_status() === PHP_SESSION_NONE) {
                 <div class="flex items-center space-x-4">
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <!-- Authenticated user menu -->
-                        <a href="/Scrap/dashboard.php" class="text-gray-100 hover:text-green-600 transition duration-200">Dashboard</a>
-                        <a href="/Scrap/map.php" class="text-gray-100 hover:text-green-600 transition duration-200">Map</a>
-                        <a href="/Scrap/request.php" class="text-gray-100 hover:text-green-600 transition duration-200">New Request</a>
-                        <a href="/Scrap/guide.php" class="text-gray-100 hover:text-green-600 transition duration-200">Guide</a>
+                        <a href="/Scrap/index.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Home</a>
+                        <a href="/Scrap/views/citizens/dashboard.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Dashboard</a>
+                        <a href="/Scrap/views/citizens/map.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Map</a>
+                        <a href="/Scrap/views/citizens/request.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">New Request</a>
+                        <a href="/Scrap/views/citizens/guide.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Guide</a>
 
                         <div class="relative">
-                            <button onclick="toggleProfileMenu()" class="flex items-center text-gray-100 hover:text-green-600 transition duration-200">
+                            <button onclick="toggleProfileMenu()" class="flex items-center text-gray-100 hover:text-emerald-400 transition duration-200">
                                 <span><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>
                                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
 
-                            <div id="profileMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                <a href="/Scrap/profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
-                                <a href="/Scrap/history.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Request History</a>
-                                <a href="/Scrap/rewards.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Rewards</a>
-                                <hr class="my-1">
-                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                            <div id="profileMenu" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-emerald-500/20 rounded-lg shadow-lg py-1 z-50">
+                                <a href="/Scrap/views/citizens/profile.php" class="block px-4 py-2 text-sm text-gray-200 hover:bg-emerald-500/10 hover:text-emerald-400">Profile Settings</a>
+                                <a href="/Scrap/views/citizens/history.php" class="block px-4 py-2 text-sm text-gray-200 hover:bg-emerald-500/10 hover:text-emerald-400">Request History</a>
+                                <a href="/Scrap/views/citizens/rewards.php" class="block px-4 py-2 text-sm text-gray-200 hover:bg-emerald-500/10 hover:text-emerald-400">My Rewards</a>
+                                <hr class="my-1 border-gray-700">
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10">
                                     Logout
                                 </button>
                             </div>
                         </div>
                     <?php else: ?>
                         <!-- Non-authenticated user menu -->
-                        <a href="#features" class="text-gray-700 hover:text-green-600 transition duration-200">Features</a>
-                        <a href="#how-it-works" class="text-gray-700 hover:text-green-600 transition duration-200">How It Works</a>
-                        <a href="#impact" class="text-gray-700 hover:text-green-600 transition duration-200">Impact</a>
-                        <a href="/Scrap/guide.html" class="text-gray-700 hover:text-green-600 transition duration-200">Guide</a>
-                        <a href="/Scrap/login.php" class="text-gray-700 hover:text-green-600 transition duration-200">Login</a>
-                        <a href="/Scrap/signup.php" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-200">
+                        <a href="/Scrap/index.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Home</a>
+                        <a href="/Scrap/features.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Features</a>
+                        <a href="/Scrap/views/auth/login.php" class="text-gray-100 hover:text-emerald-400 transition duration-200">Login</a>
+                        <a href="/Scrap/views/auth/signup.php" class="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-2 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition duration-200 shadow-lg shadow-emerald-500/30">
                             Get Started
                         </a>
                     <?php endif; ?>
@@ -103,9 +102,16 @@ if (session_status() === PHP_SESSION_NONE) {
             try {
                 const response = await fetch('/Scrap/api/logout.php', { method: 'POST' });
                 const data = await response.json();
-                window.location.href = '/Scrap/';
+                
+                // Clear all session storage
+                sessionStorage.clear();
+                
+                window.location.href = '/Scrap/index.php';
             } catch (error) {
-                window.location.href = '/Scrap/';
+                // Clear session storage even on error
+                sessionStorage.clear();
+                
+                window.location.href = '/Scrap/index.php';
             }
         }
 

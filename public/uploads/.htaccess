@@ -1,0 +1,23 @@
+# Prevent PHP execution in uploads directory
+# This protects against malicious file uploads
+
+php_flag engine off
+
+# Remove PHP handlers
+RemoveHandler .php .phtml .php3 .php4 .php5 .php6 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .php6 .phps
+
+# Deny access to PHP files
+<FilesMatch "\.(php|phtml|php3|php4|php5|php6|phps)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Allow access to image files
+<FilesMatch "\.(jpg|jpeg|png|gif|svg|webp|ico)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes

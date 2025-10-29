@@ -46,7 +46,7 @@
         <nav class="bg-green-600 text-white">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center h-16">
-                    <a href="/" class="font-bold text-xl">Kiambu Recycling</a>
+                    <a href="/Scrap/" class="font-bold text-xl">Kiambu Recycling</a>
                     <div id="navLinks" class="flex items-center space-x-4">
                         <!-- Will be populated based on user role -->
                     </div>
@@ -174,12 +174,12 @@
         async function requestCollection(collectorId) {
             if (!sessionStorage.getItem('user_id')) {
                 alert('Please log in to request a collection');
-                window.location.href = '/login.html';
+                window.location.href = '/Scrap/login.php';
                 return;
             }
 
             // Redirect to request form with collector pre-selected
-            window.location.href = `/request.html?collector=${collectorId}`;
+            window.location.href = `/Scrap/request.php?collector=${collectorId}`;
         }
 
         // Initialize page based on user role
@@ -192,19 +192,19 @@
                     // Show collector controls
                     collectorControls.classList.remove('hidden');
                     navLinks.innerHTML = `
-                        <a href="/collectors/dashboard.html" class="hover:text-green-200">Dashboard</a>
+                        <a href="/Scrap/public/collectors/dashboard.php" class="hover:text-green-200">Dashboard</a>
                         <button onclick="logout()" class="hover:text-green-200">Logout</button>
                     `;
                 } else {
                     navLinks.innerHTML = `
-                        <a href="/dashboard.html" class="hover:text-green-200">Dashboard</a>
+                        <a href="/Scrap/dashboard.php" class="hover:text-green-200">Dashboard</a>
                         <button onclick="logout()" class="hover:text-green-200">Logout</button>
                     `;
                 }
             } else {
                 navLinks.innerHTML = `
-                    <a href="/login.html" class="hover:text-green-200">Login</a>
-                    <a href="/collectors/register.html" class="hover:text-green-200">Become a Collector</a>
+                    <a href="/Scrap/login.php" class="hover:text-green-200">Login</a>
+                    <a href="/Scrap/public/collectors/register.php" class="hover:text-green-200">Become a Collector</a>
                 `;
             }
 
@@ -215,9 +215,12 @@
         // Logout function
         async function logout() {
             try {
-                await fetch('/api/logout.php');
+                await fetch('/Scrap/api/logout.php', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
                 sessionStorage.clear();
-                window.location.href = '/';
+                window.location.href = '/Scrap/views/auth/login.php';
             } catch (error) {
                 console.error('Logout failed:', error);
             }

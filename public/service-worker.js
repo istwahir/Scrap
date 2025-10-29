@@ -1,13 +1,23 @@
-const CACHE_NAME = 'kiambu-recycling-v1';
-const OFFLINE_URL = '/Scrap/offline.html';
+const CACHE_NAME = 'kiambu-recycling-v3';
+const OFFLINE_URL = '/Scrap/offline.php';
 
 const ASSETS_TO_CACHE = [
+    '/Scrap/',
     '/Scrap/index.php',
-    '/Scrap/offline.html',
-    '/Scrap/map.php',
-    '/Scrap/login.php',
-    '/Scrap/request.php',
-    '/Scrap/reward.php'
+    '/Scrap/offline.php',
+    '/Scrap/views/auth/login.php',
+    '/Scrap/views/citizens/dashboard.php',
+    '/Scrap/views/citizens/map.php',
+    '/Scrap/views/citizens/request.php',
+    '/Scrap/views/citizens/rewards.php',
+    '/Scrap/views/citizens/history.php',
+    '/Scrap/views/citizens/profile.php',
+    '/Scrap/views/citizens/guide.php',
+    '/Scrap/public/manifest.json',
+    '/Scrap/public/images/markers/truck.svg',
+    '/Scrap/public/images/markers/motorcycle.svg',
+    '/Scrap/public/images/markers/tuktuk.svg',
+    '/Scrap/public/images/markers/pickup.svg'
 ];
 
 // Install service worker and cache static assets
@@ -109,9 +119,9 @@ self.addEventListener('fetch', event => {
 // Handle push notifications
 self.addEventListener('push', event => {
     const options = {
-        body: event.data.text(),
-    icon: '/Scrap/public/images/markers/truck.svg',
-    badge: '/Scrap/public/images/markers/truck.svg',
+        body: event.data ? event.data.text() : 'New notification',
+        icon: '/Scrap/public/images/markers/truck.svg',
+        badge: '/Scrap/public/images/markers/truck.svg',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),
@@ -136,7 +146,11 @@ self.addEventListener('notificationclick', event => {
 
     if (event.action === 'view') {
         event.waitUntil(
-            clients.openWindow('/requests.php')
+            clients.openWindow('/Scrap/views/citizens/history.php')
+        );
+    } else {
+        event.waitUntil(
+            clients.openWindow('/Scrap/')
         );
     }
 });

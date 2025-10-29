@@ -1,10 +1,10 @@
 <?php
-require_once 'includes/auth.php';
-require_once 'config.php';
-require_once 'models/Reward.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config.php';
+require_once __DIR__ . '/../../models/Reward.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: /Scrap/login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
+    header('Location: /Scrap/views/auth/login.php?redirect=' . urlencode($_SERVER['REQUEST_URI']));
     exit();
 }
 $user_id = $_SESSION['user_id'];
@@ -14,7 +14,7 @@ $rewardModel = new Reward();
 $stats = $rewardModel->getStats($user_id);
 $options = $rewardModel->getRedemptionOptions();
 ?>
-<?php include 'includes/header.php'; ?>
+<?php include __DIR__ . '/../../includes/header.php'; ?>
 <style>
     .hero-gradient {
         background: radial-gradient(120% 120% at 50% 0%, rgba(16,185,129,0.18) 0%, transparent 60%),
@@ -114,4 +114,4 @@ $options = $rewardModel->getRedemptionOptions();
         </div>
     </div>
 </div>
-<?php include 'includes/footer.php'; ?>
+<?php include __DIR__ . '/../../includes/footer.php'; ?>

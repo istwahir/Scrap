@@ -28,6 +28,7 @@ function cacheEls() {
   els.navLinks = document.querySelectorAll('#navLinks a');
   els.sections = document.querySelectorAll('main section');
   els.collectorName = document.getElementById('collectorName');
+  els.collectorNameHeader = document.getElementById('collectorNameHeader');
   els.globalStatusBadge = document.getElementById('globalStatusBadge');
   els.statusSelect = document.getElementById('statusSelect');
   els.locationStatus = document.getElementById('locationStatus');
@@ -53,6 +54,12 @@ function cacheEls() {
   els.logoutBtn = document.getElementById('logoutBtn');
   els.themeToggle = document.getElementById('themeToggle');
   els.toastContainer = document.getElementById('toastContainer');
+  els.vehicleType = document.getElementById('vehicleType');
+  els.vehicleReg = document.getElementById('vehicleReg');
+  els.materialsList = document.getElementById('materialsList');
+  els.areasList = document.getElementById('areasList');
+  els.earningsChart = document.getElementById('earningsChart');
+  els.materialsChart = document.getElementById('materialsChart');
 }
 
 // Initialization
@@ -127,15 +134,15 @@ async function loadDashboardData({ silent=false } = {}) {
 
 // Rendering
 function renderAll() {
-  const { stats, activeRequests, pendingRequests, history, earnings } = state.data;
+  const { stats, activeRequests, pendingRequests, history, earnings, vehicle, areas, analytics } = state.data;
   renderStats(stats);
   renderActiveRequests(activeRequests);
   renderRequestsList(pendingRequests);
   renderHistory(history);
   renderEarnings(earnings);
-  if (state.data?.analytics) {
-    renderAnalytics(state.data.analytics);
-  }
+  if (vehicle) renderVehicle(vehicle);
+  if (areas) renderAreas(areas);
+  if (analytics) renderAnalytics(analytics);
 }
 
 function renderStats(stats) {
@@ -143,7 +150,8 @@ function renderStats(stats) {
   els.todayEarnings.textContent = 'KES ' + stats.today_earnings;
   els.rating.textContent = Number(stats.rating).toFixed(1);
   els.totalWeight.textContent = stats.total_weight + ' kg';
-  els.collectorName.textContent = stats.name;
+  if (els.collectorName) els.collectorName.textContent = stats.name;
+  if (els.collectorNameHeader) els.collectorNameHeader.textContent = stats.name;
 }
 
 function renderActiveRequests(requests) {
@@ -249,28 +257,48 @@ function renderEarnings(earnings) {
   }
 }
 
-// (Inserted modifications for analytics rendering below)
-
-// Extend existing renderAll to include analytics
-const originalRenderAll = renderAll;
-renderAll = function() { // override
-  originalRenderAll();
-  if (state.data?.analytics) {
-    renderAnalytics(state.data.analytics);
+function renderVehicle(vehicle) {
+  if (els.vehicleType) els.vehicleType.textContent = vehicle.type || 'N/A';
+  if (els.vehicleReg) els.vehicleReg.textContent = vehicle.registration || 'N/A';
+  
+  if (els.materialsList) {
+    els.materialsList.innerHTML = '';
+    if (vehicle.materials && vehicle.materials.length) {
+      vehicle.materials.forEach(material => {
+        const badge = document.createElement('span');
+        badge.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-slate-200';
+        badge.textContent = material;
+        els.materialsList.appendChild(badge);
+      });
+    } else {
+      els.materialsList.innerHTML = '<span class="text-xs text-gray-500 dark:text-slate-400">No materials listed</span>';
+    }
   }
-};
+}
 
-function ensureAnalyticsNav() {
-  if (!document.querySelector('#navLinks a[href="#analytics"]')) {
-    const li = document.createElement('li');
-    li.innerHTML = '<a href="#analytics" class="flex items-center px-3 py-2 rounded-md text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60">Analytics</a>';
-    document.getElementById('navLinks').appendChild(li);
-    li.querySelector('a').addEventListener('click', e => { e.preventDefault(); showSection('analytics'); });
+function renderAreas(areas) {
+  if (els.areasList) {
+    els.areasList.innerHTML = '';
+    if (areas && areas.length) {
+      areas.forEach(area => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-slate-700 rounded text-gray-700 dark:text-slate-200';
+        div.innerHTML = `
+          <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          <span class="text-sm">${area}</span>
+        `;
+        els.areasList.appendChild(div);
+      });
+    } else {
+      els.areasList.innerHTML = '<span class="text-xs text-gray-500 dark:text-slate-400">No service areas</span>';
+    }
   }
 }
 
 function renderAnalytics(analytics) {
-  ensureAnalyticsNav();
   // Requests Trend
   const rt = document.getElementById('requestsTrendChart');
   if (rt) {

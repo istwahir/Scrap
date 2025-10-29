@@ -1,0 +1,238 @@
+# ============================================
+# Kiambu Recycling - Restructured Application
+# .htaccess Configuration
+# Date: October 29, 2025
+# ============================================
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /Scrap/
+
+    # ============================================
+    # 1. BACKWARD COMPATIBILITY REDIRECTS
+    # ============================================
+    # Redirect old URLs to new structure
+    
+    # Authentication Pages
+    RewriteRule ^login\.php$ views/auth/login.php [L,R=301]
+    RewriteRule ^signup\.php$ views/auth/signup.php [L,R=301]
+    
+    # Citizen Pages
+    RewriteRule ^dashboard\.php$ views/citizens/dashboard.php [L,R=301]
+    RewriteRule ^profile\.php$ views/citizens/profile.php [L,R=301]
+    RewriteRule ^history\.php$ views/citizens/history.php [L,R=301]
+    RewriteRule ^request\.php$ views/citizens/request.php [L,R=301]
+    RewriteRule ^request_details\.php$ views/citizens/request_details.php [L,R=301]
+    RewriteRule ^rewards\.php$ views/citizens/rewards.php [L,R=301]
+    RewriteRule ^map\.php$ views/citizens/map.php [L,R=301]
+    RewriteRule ^guide\.php$ views/citizens/guide.php [L,R=301]
+    
+    # Old Public Admin Directory
+    RewriteRule ^public/admin/(.*)$ views/admin/$1 [L,R=301]
+    
+    # Old Public Collectors Directory
+    RewriteRule ^public/collectors/(.*)$ views/collectors/$1 [L,R=301]
+    
+    # Legacy uploads path (if needed for old database records)
+    # Uncomment if you haven't migrated database paths yet
+    # RewriteRule ^uploads/(.*)$ public/uploads/$1 [L,R=301]
+
+    # ============================================
+    # 2. SECURITY RULES
+    # ============================================
+    
+    # Prevent access to sensitive files
+    <FilesMatch "\.(env|git|gitignore|htaccess|sql|md|lock|log)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Protect sensitive JSON files in root, but allow manifest.json in public
+    <FilesMatch "^(composer|package|package-lock)\.json$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Protect config and sensitive PHP files
+    <FilesMatch "^(config|\.env)\.php$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Prevent directory browsing
+    Options -Indexes
+
+    # ============================================
+    # 3. PERFORMANCE OPTIMIZATION
+    # ============================================
+    
+    # Enable GZIP Compression
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    </IfModule>
+    
+    # Browser Caching
+    <IfModule mod_expires.c>
+        ExpiresActive On
+        
+        # Images
+        ExpiresByType image/jpeg "access plus 1 year"
+        ExpiresByType image/jpg "access plus 1 year"
+        ExpiresByType image/png "access plus 1 year"
+        ExpiresByType image/gif "access plus 1 year"
+        ExpiresByType image/svg+xml "access plus 1 year"
+        ExpiresByType image/webp "access plus 1 year"
+        ExpiresByType image/x-icon "access plus 1 year"
+        
+        # CSS and JavaScript
+        ExpiresByType text/css "access plus 1 month"
+        ExpiresByType application/javascript "access plus 1 month"
+        ExpiresByType text/javascript "access plus 1 month"
+        
+        # Fonts
+        ExpiresByType font/woff "access plus 1 year"
+        ExpiresByType font/woff2 "access plus 1 year"
+        ExpiresByType font/ttf "access plus 1 year"
+        ExpiresByType font/otf "access plus 1 year"
+        ExpiresByType application/font-woff "access plus 1 year"
+        ExpiresByType application/font-woff2 "access plus 1 year"
+        
+        # HTML, JSON
+        ExpiresByType text/html "access plus 0 seconds"
+        ExpiresByType application/json "access plus 0 seconds"
+    </IfModule>
+    
+    # Set Cache-Control Headers
+    <IfModule mod_headers.c>
+        # Static assets
+        <FilesMatch "\.(jpg|jpeg|png|gif|svg|ico|css|js|woff|woff2|ttf|otf)$">
+            Header set Cache-Control "max-age=31536000, public"
+        </FilesMatch>
+        
+        # HTML pages - no cache
+        <FilesMatch "\.(html|htm|php)$">
+            Header set Cache-Control "no-cache, no-store, must-revalidate"
+            Header set Pragma "no-cache"
+            Header set Expires "0"
+        </FilesMatch>
+        
+        # Security headers
+        Header always set X-Frame-Options "SAMEORIGIN"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-XSS-Protection "1; mode=block"
+        Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    </IfModule>
+
+    # ============================================
+    # 4. ERROR HANDLING
+    # ============================================
+    
+    # Custom error pages (create these if needed)
+    # ErrorDocument 404 /Scrap/views/errors/404.php
+    # ErrorDocument 403 /Scrap/views/errors/403.php
+    # ErrorDocument 500 /Scrap/views/errors/500.php
+
+    # ============================================
+    # 5. PHP CONFIGURATION
+    # ============================================
+    
+    # Set PHP settings (if not set in php.ini)
+    <IfModule mod_php7.c>
+        php_value upload_max_filesize 10M
+        php_value post_max_size 12M
+        php_value max_execution_time 300
+        php_value max_input_time 300
+        php_value memory_limit 256M
+        php_flag display_errors Off
+        php_flag log_errors On
+    </IfModule>
+    
+    <IfModule mod_php8.c>
+        php_value upload_max_filesize 10M
+        php_value post_max_size 12M
+        php_value max_execution_time 300
+        php_value max_input_time 300
+        php_value memory_limit 256M
+        php_flag display_errors Off
+        php_flag log_errors On
+    </IfModule>
+
+    # ============================================
+    # 6. MIME TYPES
+    # ============================================
+    
+    <IfModule mod_mime.c>
+        # Web fonts
+        AddType font/woff .woff
+        AddType font/woff2 .woff2
+        AddType font/ttf .ttf
+        AddType font/otf .otf
+        
+        # SVG
+        AddType image/svg+xml .svg .svgz
+        
+        # Web manifest
+        AddType application/manifest+json .webmanifest
+        AddType application/json .json
+        
+        # WebP images
+        AddType image/webp .webp
+    </IfModule>
+
+    # ============================================
+    # 7. FORCE HTTPS (Uncomment when ready)
+    # ============================================
+    
+    # Redirect HTTP to HTTPS
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # ============================================
+    # 8. WWW REDIRECT (Choose one if needed)
+    # ============================================
+    
+    # Redirect www to non-www
+    # RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+    # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+    
+    # OR redirect non-www to www
+    # RewriteCond %{HTTP_HOST} !^www\. [NC]
+    # RewriteCond %{HTTP_HOST} !^localhost [NC]
+    # RewriteRule ^(.*)$ https://www.%{HTTP_HOST}/$1 [R=301,L]
+
+    # ============================================
+    # 9. ALLOW API ACCESS (CORS for API endpoints)
+    # ============================================
+    
+    <IfModule mod_headers.c>
+        # Allow cross-origin requests for API (adjust as needed)
+        <FilesMatch "\.(php)$">
+            SetEnvIf Request_URI "^/Scrap/api/" IS_API
+            Header set Access-Control-Allow-Origin "*" env=IS_API
+            Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" env=IS_API
+            Header set Access-Control-Allow-Headers "Content-Type, Authorization" env=IS_API
+        </FilesMatch>
+    </IfModule>
+
+    # ============================================
+    # 10. HANDLE TRAILING SLASHES
+    # ============================================
+    
+    # Remove trailing slash (optional - enable if needed)
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteCond %{REQUEST_URI} (.+)/$
+    # RewriteRule ^ %1 [R=301,L]
+
+</IfModule>
+
+# ============================================
+# 11. DEFAULT CHARACTER SET
+# ============================================
+
+AddDefaultCharset UTF-8
+DefaultLanguage en-US
+
+# ============================================
+# END OF CONFIGURATION
+# ============================================

@@ -14,19 +14,19 @@ if (!$auth->isAuthenticated()) {
 
 try {
     $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME,
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME,
         DB_USER,
         DB_PASS
     );
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Get collector ID
-    $stmt = $pdo->prepare("
+    // Get collector details for this logged-in user
+    $stmt = $pdo->prepare('
         SELECT c.*, ca.name 
         FROM collectors c
         JOIN collector_applications ca ON c.application_id = ca.id
         WHERE c.user_id = ?
-    ");
+    ');
     $stmt->execute([$_SESSION['user_id']]);
     $collector = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -36,202 +36,188 @@ try {
         exit;
     }
 
-    // Get today's stats
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as collection_count,
-            COALESCE(SUM(amount), 0) as total_earnings,
-            COALESCE(SUM(weight), 0) as total_weight
-        FROM collections
+    // Today's stats (from completed requests today)
+    $stmt = $pdo->prepare('
+        SELECT
+            COUNT(*) AS collection_count,
+            0 AS total_earnings,
+            COALESCE(SUM(estimated_weight), 0) AS total_weight
+        FROM collection_requests
         WHERE collector_id = ?
-        AND DATE(completed_at) = CURRENT_DATE
-    ");
+          AND status = "completed"
+          AND DATE(COALESCE(completed_at, updated_at, created_at)) = CURRENT_DATE
+    ');
     $stmt->execute([$collector['id']]);
-    $todayStats = $stmt->fetch(PDO::FETCH_ASSOC);
+    $todayStats = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['collection_count' => 0, 'total_earnings' => 0, 'total_weight' => 0];
 
-    // Get active requests
-    $stmt = $pdo->prepare("
+    // Active requests (assigned or en_route)
+    $stmt = $pdo->prepare('
         SELECT r.*, u.name as customer_name
         FROM collection_requests r
         JOIN users u ON r.user_id = u.id
         WHERE r.collector_id = ?
-        AND r.status = 'accepted'
+          AND r.status IN ("assigned","en_route")
         ORDER BY r.created_at ASC
-    ");
+    ');
     $stmt->execute([$collector['id']]);
     $activeRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get pending requests
-    $stmt = $pdo->prepare("
+    // Pending requests (awaiting action by this collector)
+    $stmt = $pdo->prepare('
         SELECT r.*, u.name as customer_name
         FROM collection_requests r
         JOIN users u ON r.user_id = u.id
         WHERE r.collector_id = ?
-        AND r.status = 'pending'
+          AND r.status = "pending"
         ORDER BY r.created_at DESC
-    ");
+    ');
     $stmt->execute([$collector['id']]);
     $pendingRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get collection history
-    $stmt = $pdo->prepare("
-        SELECT c.*, u.name as customer_name
-        FROM collections c
-        JOIN users u ON c.user_id = u.id
-        WHERE c.collector_id = ?
-        ORDER BY c.completed_at DESC
+    // Recent history (completed)
+    $stmt = $pdo->prepare('
+        SELECT r.*, u.name as customer_name
+        FROM collection_requests r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.collector_id = ?
+          AND r.status = "completed"
+        ORDER BY r.completed_at DESC
         LIMIT 20
-    ");
+    ');
     $stmt->execute([$collector['id']]);
     $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get earnings trend (last 7 days)
-    $stmt = $pdo->prepare("
-        SELECT 
-            DATE(completed_at) as date,
-            SUM(amount) as daily_earnings
-        FROM collections
+    // Earnings trend placeholder (7 days - using weight as proxy, earnings=0)
+    $stmt = $pdo->prepare('
+        SELECT
+            DATE(COALESCE(completed_at, updated_at, created_at)) as date,
+            0 as daily_earnings,
+            COALESCE(SUM(estimated_weight),0) as daily_weight
+        FROM collection_requests
         WHERE collector_id = ?
-        AND completed_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
-        GROUP BY DATE(completed_at)
+          AND status = "completed"
+          AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+        GROUP BY DATE(COALESCE(completed_at, updated_at, created_at))
         ORDER BY date ASC
-    ");
+    ');
     $stmt->execute([$collector['id']]);
     $earningsTrend = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get materials breakdown (last 30 days)
-    $stmt = $pdo->prepare("
-        SELECT 
-            material_type,
-            COUNT(*) as count
-        FROM collections
+    // Materials breakdown (completed in last 30 days)
+    $stmt = $pdo->prepare('
+        SELECT COALESCE(materials,"unknown") as material_type, COUNT(*) as count
+        FROM collection_requests
         WHERE collector_id = ?
-        AND completed_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
-        GROUP BY material_type
-    ");
+          AND status = "completed"
+          AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+        GROUP BY COALESCE(materials,"unknown")
+    ');
     $stmt->execute([$collector['id']]);
     $materialsBreakdown = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Additional analytics
-    // Requests trend (last 14 days) for this collector (accepted + completed + pending)
-    $stmt = $pdo->prepare("SELECT DATE(created_at) as day, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 14 DAY) GROUP BY DATE(created_at) ORDER BY day ASC");
+    // Analytics
+    $stmt = $pdo->prepare('SELECT DATE(created_at) as day, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 14 DAY) GROUP BY DATE(created_at) ORDER BY day ASC');
     $stmt->execute([$collector['id']]);
     $requestsTrend = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Status distribution for current outstanding + recent (last 30 days) requests
-    $stmt = $pdo->prepare("SELECT status, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY status");
+    $stmt = $pdo->prepare('SELECT status, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY status');
     $stmt->execute([$collector['id']]);
     $statusDistribution = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Material distribution for requests (not just completed collections) last 30 days
-    $stmt = $pdo->prepare("SELECT material_type, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY material_type");
+    $stmt = $pdo->prepare('SELECT COALESCE(materials,"unknown") as material_type, COUNT(*) as cnt FROM collection_requests WHERE collector_id = ? AND created_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) GROUP BY COALESCE(materials,"unknown")');
     $stmt->execute([$collector['id']]);
     $requestMaterials = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Fill missing days with zero for requests trend (ensure 14-day continuity)
+    // Fill missing days for requests trend (14 days)
     $trendMap = [];
     foreach ($requestsTrend as $row) { $trendMap[$row['day']] = (int)$row['cnt']; }
     $trendLabels = [];
     $trendValues = [];
     for ($i = 13; $i >= 0; $i--) {
-        $d = date('Y-m-d', strtotime("-{$i} day"));
+        $d = date('Y-m-d', strtotime('-' . $i . ' day'));
         $trendLabels[] = date('M j', strtotime($d));
         $trendValues[] = $trendMap[$d] ?? 0;
     }
 
-    // Status distribution arrays
+    // Arrays for distributions
     $statusLabels = array_map(function($r) { return $r['status']; }, $statusDistribution);
     $statusValues = array_map(function($r) { return (int)$r['cnt']; }, $statusDistribution);
-
-    // Request materials distribution arrays
     $reqMatLabels = array_map(function($r) { return $r['material_type']; }, $requestMaterials);
     $reqMatValues = array_map(function($r) { return (int)$r['cnt']; }, $requestMaterials);
 
-    // Format response data
-    $response = [
+    // Get vehicle info
+    $vehicle = ['type' => $collector['vehicle_type'] ?? 'N/A', 'registration' => $collector['vehicle_registration'] ?? 'N/A', 'materials' => []];
+    
+    // Get materials this collector handles
+    $stmt = $pdo->prepare('SELECT material_type FROM collector_materials WHERE collector_id = ?');
+    $stmt->execute([$collector['id']]);
+    $vehicle['materials'] = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'material_type');
+    
+    // Get service areas
+    $stmt = $pdo->prepare('SELECT area_name FROM collector_areas WHERE collector_id = ?');
+    $stmt->execute([$collector['id']]);
+    $areas = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'area_name');
+
+    // Format response
+    echo json_encode([
         'status' => 'success',
         'stats' => [
-            'name' => $collector['name'],
-            'today_collections' => $todayStats['collection_count'],
-            'today_earnings' => $todayStats['total_earnings'],
-            'rating' => $collector['rating'],
-            'total_weight' => $todayStats['total_weight']
+            'name' => isset($collector['name']) ? $collector['name'] : '—',
+            'today_collections' => (int)$todayStats['collection_count'],
+            'today_earnings' => (float)$todayStats['total_earnings'],
+            'rating' => isset($collector['rating']) ? (float)$collector['rating'] : 0,
+            'total_weight' => (float)$todayStats['total_weight']
         ],
-        'activeRequests' => array_map(function($request) {
+        'activeRequests' => array_map(function($r) {
             return [
-                'id' => $request['id'],
-                'customer_name' => $request['customer_name'],
-                'material_type' => $request['material_type'],
-                'address' => $request['address'],
-                'latitude' => $request['latitude'],
-                'longitude' => $request['longitude']
+                'id' => (int)$r['id'],
+                'customer_name' => $r['customer_name'],
+                'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
+                'latitude' => isset($r['lat']) ? (float)$r['lat'] : null,
+                'longitude' => isset($r['lng']) ? (float)$r['lng'] : null,
             ];
         }, $activeRequests),
-        'pendingRequests' => array_map(function($request) {
+        'pendingRequests' => array_map(function($r) {
             return [
-                'id' => $request['id'],
-                'customer_name' => $request['customer_name'],
-                'material_type' => $request['material_type'],
-                'address' => $request['address'],
-                'created_at' => date('M j, Y g:i A', strtotime($request['created_at']))
+                'id' => (int)$r['id'],
+                'customer_name' => $r['customer_name'],
+                'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
+                'created_at' => !empty($r['created_at']) ? date('M j, Y g:i A', strtotime($r['created_at'])) : ''
             ];
         }, $pendingRequests),
-        'history' => array_map(function($item) {
+        'history' => array_map(function($r) {
             return [
-                'id' => $item['id'],
-                'customer_name' => $item['customer_name'],
-                'material_type' => $item['material_type'],
-                'weight' => $item['weight'],
-                'amount' => $item['amount'],
-                'address' => $item['address'],
-                'completed_at' => date('M j, Y g:i A', strtotime($item['completed_at']))
+                'id' => (int)$r['id'],
+                'customer_name' => $r['customer_name'],
+                'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
+                'weight' => isset($r['estimated_weight']) ? (float)$r['estimated_weight'] : 0,
+                'amount' => 0,
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
+                'completed_at' => (isset($r['completed_at']) && !empty($r['completed_at'])) ? date('M j, Y g:i A', strtotime($r['completed_at'])) : ((isset($r['updated_at']) && !empty($r['updated_at'])) ? date('M j, Y g:i A', strtotime($r['updated_at'])) : '')
             ];
         }, $history),
         'earnings' => [
             'trend' => [
-                'labels' => array_map(function($item) {
-                    return date('M j', strtotime($item['date']));
-                }, $earningsTrend),
-                'values' => array_map(function($item) {
-                    return $item['daily_earnings'];
-                }, $earningsTrend)
+                'labels' => array_map(function($row) { return date('M j', strtotime($row['date'])); }, $earningsTrend),
+                'values' => array_map(function($row) { return (float)$row['daily_earnings']; }, $earningsTrend)
             ],
             'materials' => [
-                'labels' => array_map(function($item) {
-                    return $item['material_type'];
-                }, $materialsBreakdown),
-                'values' => array_map(function($item) {
-                    return $item['count'];
-                }, $materialsBreakdown)
+                'labels' => array_map(function($row) { return $row['material_type']; }, $materialsBreakdown),
+                'values' => array_map(function($row) { return (int)$row['count']; }, $materialsBreakdown)
             ]
         ],
         'analytics' => [
-            // NOTE: Added 'analytics' section to response with:
-            //  analytics.requests_trend: { labels: [last 14 days], values: counts }
-            //  analytics.status_distribution: { labels: statuses, values: counts }
-            //  analytics.request_materials: { labels: material types (requests), values: counts }
-            // This augments existing 'earnings' object.
-            'requests_trend' => [
-                'labels' => $trendLabels,
-                'values' => $trendValues
-            ],
-            'status_distribution' => [
-                'labels' => $statusLabels,
-                'values' => $statusValues
-            ],
-            'request_materials' => [
-                'labels' => $reqMatLabels,
-                'values' => $reqMatValues
-            ]
-        ]
-    ];
-
-    echo json_encode($response);
+            'requests_trend' => [ 'labels' => $trendLabels, 'values' => $trendValues ],
+            'status_distribution' => [ 'labels' => $statusLabels, 'values' => $statusValues ],
+            'request_materials' => [ 'labels' => $reqMatLabels, 'values' => $reqMatValues ]
+        ],
+        'vehicle' => $vehicle,
+        'areas' => $areas
+    ]);
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Server error: ' . $e->getMessage()
-    ]);
+    echo json_encode(['status' => 'error', 'message' => 'Server error: ' . $e->getMessage()]);
 }

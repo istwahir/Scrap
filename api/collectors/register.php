@@ -120,11 +120,24 @@ try {
     ];
 
     $uploaded_files = [];
-    // Prepare upload dir
+    // Prepare upload dir (robust)
     $todayPath = date('Y/m');
-    $baseUploadDir = realpath(__DIR__ . '/../../') . '/uploads/collectors/' . $todayPath;
+    $rootPath = realpath(__DIR__ . '/../../');
+    if ($rootPath === false) {
+        throw new Exception('Server path resolution failed');
+    }
+    $relativeUploadDir = '/public/uploads/collectors/' . $todayPath;
+    $baseUploadDir = $rootPath . $relativeUploadDir;
     if (!is_dir($baseUploadDir)) {
-        @mkdir($baseUploadDir, 0777, true);
+        if (!@mkdir($baseUploadDir, 0777, true)) {
+            throw new Exception('Failed to create upload directory: ' . $relativeUploadDir);
+        }
+    }
+    if (!is_writable($baseUploadDir)) {
+        @chmod($baseUploadDir, 0777);
+        if (!is_writable($baseUploadDir)) {
+            throw new Exception('Upload directory not writable: ' . $relativeUploadDir);
+        }
     }
 
     $finfo = function_exists('finfo_open') ? finfo_open(FILEINFO_MIME_TYPE) : false;
@@ -158,11 +171,15 @@ try {
         $filepath = $baseUploadDir . '/' . $filename;
 
         // Move uploaded file
-        if (!move_uploaded_file($_FILES[$field]['tmp_name'], $filepath)) {
-            throw new Exception("Failed to save $label");
+        $tmp = $_FILES[$field]['tmp_name'];
+        if (!is_uploaded_file($tmp)) {
+            throw new Exception("Upload not found for $label (tmp missing). Try reselecting the file.");
+        }
+        if (!@move_uploaded_file($tmp, $filepath)) {
+            throw new Exception("Failed to save $label to $relativeUploadDir/" . $filename);
         }
 
-        // Store relative path from uploads/collectors
+        // Store relative path from public/uploads/collectors
         $uploaded_files[$field] = $todayPath . '/' . $filename;
     }
 
@@ -255,7 +272,7 @@ try {
     // Clean up uploaded files if they exist
     if (isset($uploaded_files)) {
         foreach ($uploaded_files as $file) {
-            $filepath = realpath(__DIR__ . '/../../') . '/uploads/collectors/' . $file;
+            $filepath = realpath(__DIR__ . '/../../') . '/public/uploads/collectors/' . $file;
             if (file_exists($filepath)) {
                 unlink($filepath);
             }
