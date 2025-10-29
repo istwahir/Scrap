@@ -1,0 +1,21 @@
+# Security for admin uploads
+php_flag engine off
+
+# Remove PHP handlers
+RemoveHandler .php .phtml .php3 .php4 .php5 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .phps
+
+# Deny PHP file execution
+<FilesMatch "\.ph(p[3-7]?|tml)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Allow images and documents
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|pdf|csv|xlsx)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Prevent directory browsing
+Options -Indexes

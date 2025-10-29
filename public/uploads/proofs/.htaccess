@@ -1,0 +1,21 @@
+# Security for collection proof photos
+php_flag engine off
+
+# Remove PHP handlers
+RemoveHandler .php .phtml .php3 .php4 .php5 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .phps
+
+# Deny PHP file execution
+<FilesMatch "\.ph(p[3-7]?|tml)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Allow only image files
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    Order Allow,Deny
+    Allow from all
+</FilesMatch>
+
+# Prevent directory browsing
+Options -Indexes

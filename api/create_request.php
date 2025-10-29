@@ -6,6 +6,7 @@ ini_set('log_errors', 1);
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../includes/upload_config.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -101,68 +102,17 @@ try {
         exit;
     }
     
-    // Handle photo upload
+    // Handle photo upload using UploadHelper
     $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
         try {
-            $uploadDir = __DIR__ . '/../public/uploads/';
-            if (!is_dir($uploadDir)) {
-                if (!mkdir($uploadDir, 0755, true)) {
-                    throw new Exception('Failed to create upload directory');
-                }
-            }
-            
-            // Check if upload directory is writable
-            if (!is_writable($uploadDir)) {
-                throw new Exception('Upload directory is not writable');
-            }
-            
-            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-            $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
-            $detectedType = finfo_file($fileInfo, $_FILES['photo']['tmp_name']);
-            finfo_close($fileInfo);
-            
-            if (!in_array($detectedType, $allowedTypes)) {
-                http_response_code(400);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'Invalid file type. Only JPEG, PNG, and GIF are allowed.'
-                ]);
-                exit;
-            }
-            
-            $maxSize = 5 * 1024 * 1024; // 5MB
-            if ($_FILES['photo']['size'] > $maxSize) {
-                http_response_code(400);
-                echo json_encode([
-                    'status' => 'error',
-                    'message' => 'File size too large. Maximum size is 5MB.'
-                ]);
-                exit;
-            }
-            
-            // Get proper extension based on detected type
-            $extensionMap = [
-                'image/jpeg' => 'jpg',
-                'image/jpg' => 'jpg',
-                'image/png' => 'png',
-                'image/gif' => 'gif'
-            ];
-            $extension = $extensionMap[$detectedType] ?? 'jpg';
-            
-            $fileName = uniqid() . '_' . time() . '.' . $extension;
-            $fullPath = $uploadDir . $fileName;
-            
-            if (!move_uploaded_file($_FILES['photo']['tmp_name'], $fullPath)) {
-                throw new Exception('Failed to move uploaded file');
-            }
-            
-            // Store relative path for database
-            $photoPath = 'public/uploads/' . $fileName;
+            // Use UploadHelper for organized, validated uploads
+            $uploadResult = UploadHelper::uploadFile($_FILES['photo'], 'requests');
+            $photoPath = $uploadResult['relative_path'];
             
         } catch (Exception $uploadError) {
             error_log('Photo upload error: ' . $uploadError->getMessage());
-            http_response_code(500);
+            http_response_code(400);
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Photo upload failed: ' . $uploadError->getMessage()
