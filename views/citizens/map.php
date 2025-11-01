@@ -293,7 +293,7 @@ require_once __DIR__ . '/../../config.php';
                     .map(cb => cb.value)
                     .join(',');
 
-                let url = '/api/get_dropoffs.php';
+                let url = '<?= BASE_URL ?>/api/get_dropoffs.php';
                 const params = new URLSearchParams();
                 if (filters) {
                     params.append('materials', filters);
@@ -477,7 +477,7 @@ require_once __DIR__ . '/../../config.php';
                 clearTimeout(collectorReconnectTimeout);
             }
 
-            collectorsEventSource = new EventSource('/Scrap/api/collectors/get_locations.php');
+            collectorsEventSource = new EventSource('<?= BASE_URL ?>/api/collectors/get_locations.php');
 
             collectorsEventSource.addEventListener('update', event => {
                 try {
@@ -515,19 +515,19 @@ require_once __DIR__ . '/../../config.php';
         function requestCollectorPickup(collectorId) {
             const isLoggedIn = <?php echo isset($_SESSION['user_id']) ? 'true' : 'false'; ?>;
             if (!isLoggedIn) {
-                window.location.href = `/login.php?redirect=map&collector=${collectorId}`;
+                window.location.href = `<?= BASE_URL ?>/views/auth/login.php?redirect=map&collector=${collectorId}`;
                 return;
             }
-            window.location.href = `/request.php?collector=${collectorId}`;
+            window.location.href = `<?= BASE_URL ?>/views/citizens/request.php?collector=${collectorId}`;
         }
 
         function createRequest(dropoffId) {
             const isLoggedIn = <?php echo isset($_SESSION['user_id']) ? 'true' : 'false'; ?>;
             if (!isLoggedIn) {
-                window.location.href = `/login.php?redirect=map&dropoff=${dropoffId}`;
+                window.location.href = `<?= BASE_URL ?>/views/auth/login.php?redirect=map&dropoff=${dropoffId}`;
                 return;
             }
-            window.location.href = `/request.php?dropoff=${dropoffId}`;
+            window.location.href = `<?= BASE_URL ?>/views/citizens/request.php?dropoff=${dropoffId}`;
         }
 
         loadDropoffs();
@@ -536,7 +536,7 @@ require_once __DIR__ . '/../../config.php';
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
+                navigator.serviceWorker.register('<?= BASE_URL ?>/public/service-worker.js')
                     .then(registration => {
                         console.log('ServiceWorker registered:', registration);
                     })

@@ -110,6 +110,14 @@ include __DIR__ . '/../../includes/header.php';
             <div class="space-y-3">
                 <?php if (!empty($recentRequests)): foreach ($recentRequests as $request): ?>
                 <div class="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
+                    <?php if (!empty($request['photo_url'])): ?>
+                        <?php $imgSrc = BASE_URL . '/' . ltrim($request['photo_url'], '/'); ?>
+                        <div class="flex-shrink-0 mr-4">
+                            <a href="/Scrap/views/citizens/request_details.php?id=<?= $request['id'] ?>">
+                                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Request photo" class="w-20 h-20 object-cover rounded-lg border border-white/10">
+                            </a>
+                        </div>
+                    <?php endif; ?>
                     <div class="flex-1">
                         <p class="font-medium text-white"><?= htmlspecialchars($request['materials']) ?></p>
                         <p class="text-sm text-emerald-100/80"><?= $request['pickup_date'] ?? '' ?> <?= $request['pickup_time'] ?? '' ?></p>

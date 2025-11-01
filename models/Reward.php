@@ -10,6 +10,15 @@ class Reward {
     }
 
     /**
+     * Check if a column exists in the rewards table
+     */
+    private function columnExists($column) {
+        $stmt = $this->db->prepare("SHOW COLUMNS FROM {$this->table} LIKE ?");
+        $stmt->execute([$column]);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Find reward by ID
      */
     public function findById($id) {
@@ -43,17 +52,27 @@ class Reward {
      * Create new reward entry
      */
     public function create($data) {
-        $stmt = $this->db->prepare(
-            "INSERT INTO {$this->table} (user_id, points, description, type, created_at)
-             VALUES (?, ?, ?, ?, NOW())"
-        );
-
-        $stmt->execute([
+        // Build insert columns dynamically based on schema
+        $cols = ['user_id', 'points', 'activity_type', 'reference_id', 'redeemed', 'created_at'];
+        $placeholders = ['?', '?', '?', '?', '?', 'NOW()'];
+        $values = [
             $data['user_id'],
             $data['points'],
-            $data['description'] ?? null,
-            $data['type'] ?? 'earned'
-        ]);
+            $data['type'] ?? ($data['activity_type'] ?? 'earned'),
+            $data['reference_id'] ?? null,
+            $data['redeemed'] ?? 0
+        ];
+
+        // If a description column exists, include it
+        if ($this->columnExists('description')) {
+            array_splice($cols, 3, 0, 'description');
+            array_splice($placeholders, 3, 0, '?');
+            array_splice($values, 3, 0, $data['description'] ?? null);
+        }
+
+        $sql = "INSERT INTO {$this->table} (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($values);
 
         return $this->db->lastInsertId();
     }
@@ -65,14 +84,19 @@ class Reward {
         // Calculate points based on weight (10 points per kg)
         $points = ceil($weight * 10);
 
-        $stmt = $this->db->prepare(
-            "INSERT INTO {$this->table} (user_id, points, description, type, reference_id, created_at)
-             VALUES (?, ?, ?, 'collection', ?, NOW())"
-        );
+        $data = [
+            'user_id' => $userId,
+            'points' => $points,
+            'type' => 'collection',
+            'reference_id' => $requestId,
+            'redeemed' => 0
+        ];
 
-        $description = "Points awarded for recycling {$weight}kg of materials";
-        $stmt->execute([$userId, $points, $description, $requestId]);
+        if ($this->columnExists('description')) {
+            $data['description'] = "Points awarded for recycling {$weight}kg of materials";
+        }
 
+        $this->create($data);
         return $points;
     }
 
@@ -87,13 +111,19 @@ class Reward {
             return false;
         }
 
-        $stmt = $this->db->prepare(
-            "INSERT INTO {$this->table} (user_id, points, description, type, redeemed, created_at)
-             VALUES (?, ?, ?, 'redemption', 1, NOW())"
-        );
+        $data = [
+            'user_id' => $userId,
+            'points' => -abs((int)$points),
+            'type' => 'redemption',
+            'reference_id' => null,
+            'redeemed' => 1
+        ];
 
-        $stmt->execute([$userId, -$points, $description ?? 'Points redeemed']);
+        if ($description && $this->columnExists('description')) {
+            $data['description'] = $description;
+        }
 
+        $this->create($data);
         return true;
     }
 

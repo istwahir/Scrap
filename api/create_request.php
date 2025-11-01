@@ -6,7 +6,6 @@ ini_set('log_errors', 1);
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
-require_once __DIR__ . '/../includes/upload_config.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -102,25 +101,25 @@ try {
         exit;
     }
     
-    // Handle photo upload using UploadHelper
+    // Handle photo upload using centralized upload helper
     $photoPath = null;
     if (isset($_FILES['photo']) && $_FILES['photo']['error'] === UPLOAD_ERR_OK) {
-        try {
-            // Use UploadHelper for organized, validated uploads
-            $uploadResult = UploadHelper::uploadFile($_FILES['photo'], 'requests');
-            $photoPath = $uploadResult['relative_path'];
-            
-        } catch (Exception $uploadError) {
-            error_log('Photo upload error: ' . $uploadError->getMessage());
-            http_response_code(400);
+        // Use centralized upload helper for category-based folders and validation
+        require_once __DIR__ . '/../includes/upload_config.php';
+        $uploadRes = handle_upload('photo', 'requests');
+        if (isset($uploadRes['error'])) {
+            error_log('Photo upload error: ' . $uploadRes['error']);
+            http_response_code(500);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Photo upload failed: ' . $uploadError->getMessage()
+                'message' => 'Photo upload failed: ' . $uploadRes['error']
             ]);
             exit;
         }
+
+        $photoPath = $uploadRes['path'];
     } elseif (isset($_FILES['photo']) && $_FILES['photo']['error'] !== UPLOAD_ERR_NO_FILE) {
-        // Handle upload errors
+        // Handle upload errors (preserve original user-facing messages)
         $uploadErrors = [
             UPLOAD_ERR_INI_SIZE => 'File exceeds upload_max_filesize directive',
             UPLOAD_ERR_FORM_SIZE => 'File exceeds MAX_FILE_SIZE directive',
@@ -129,9 +128,9 @@ try {
             UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
             UPLOAD_ERR_EXTENSION => 'Upload stopped by extension'
         ];
-        
+
         $errorMessage = $uploadErrors[$_FILES['photo']['error']] ?? 'Unknown upload error';
-        
+
         http_response_code(400);
         echo json_encode([
             'status' => 'error',

@@ -89,7 +89,7 @@ include __DIR__ . '/../../includes/header.php';
     <div class="container mx-auto px-4 py-8">
         <div class="mb-8">
             <div class="flex items-center gap-4 mb-4">
-                <a href="/Scrap/views/citizens/history.php" class="inline-flex items-center gap-2 px-4 py-2 border border-white/20 text-white rounded-lg hover:border-emerald-300 transition">
+                <a href="<?= BASE_URL ?>/views/citizens/history.php" class="inline-flex items-center gap-2 px-4 py-2 border border-white/20 text-white rounded-lg hover:border-emerald-300 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
@@ -178,10 +178,15 @@ include __DIR__ . '/../../includes/header.php';
                     </div>
                 </div>
                 <?php if ($request['photo_url']): ?>
+                <?php $imgSrc = BASE_URL . '/' . ltrim($request['photo_url'], '/'); ?>
                 <div class="mt-6">
                     <label class="text-sm font-medium text-emerald-300">Photo</label>
                     <div class="mt-2">
-                        <img src="<?= htmlspecialchars($request['photo_url']) ?>" alt="Request photo" class="max-w-full h-auto rounded-lg border border-white/20">
+                        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Request photo" class="max-w-full h-auto rounded-lg border border-white/20 cursor-pointer" loading="lazy" onclick="openImageModal('<?= htmlspecialchars($imgSrc) ?>')">
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <a href="<?= htmlspecialchars($imgSrc) ?>" target="_blank" class="px-4 py-2 bg-slate-800 border border-white/10 text-white rounded-lg text-sm">Open in new tab</a>
+                        <a href="<?= htmlspecialchars($imgSrc) ?>" download class="px-4 py-2 bg-emerald-500 text-slate-900 rounded-lg text-sm">Download Photo</a>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -249,6 +254,20 @@ include __DIR__ . '/../../includes/header.php';
     </div>
 </div>
 
+<!-- Image Modal -->
+<div id="imageModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 hidden">
+    <div class="relative max-w-4xl w-full p-4">
+        <button onclick="closeImageModal()" class="absolute top-2 right-2 text-white text-2xl z-50">&times;</button>
+        <div class="bg-black/90 rounded-lg p-4 flex items-center justify-center">
+            <img id="imageModalImg" src="" alt="Preview" class="max-h-[80vh] max-w-full rounded-lg object-contain">
+        </div>
+        <div class="mt-3 flex justify-center gap-3">
+            <a id="imageModalOpen" href="#" target="_blank" class="px-4 py-2 bg-slate-800 border border-white/10 text-white rounded-lg text-sm">Open in new tab</a>
+            <a id="imageModalDownload" href="#" download class="px-4 py-2 bg-emerald-500 text-slate-900 rounded-lg text-sm">Download Photo</a>
+        </div>
+    </div>
+</div>
+
 <!-- Edit Modal -->
 <div id="editModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden">
     <div class="bg-slate-900 rounded-2xl p-8 w-full max-w-lg shadow-2xl relative">
@@ -295,7 +314,7 @@ async function deleteRequest(requestId) {
         });
         const data = await response.json();
         if (data.status === 'success') {
-            window.location.href = '/Scrap/history.php';
+            window.location.href = '<?= BASE_URL ?>/views/citizens/history.php';
         } else {
             alert('Failed to delete request: ' + data.message);
         }
@@ -335,6 +354,25 @@ async function submitEditForm(event) {
     } catch (error) {
         alert('Failed to update request. Please try again.');
     }
+}
+
+// Image modal functions
+function openImageModal(src) {
+    const modal = document.getElementById('imageModal');
+    const img = document.getElementById('imageModalImg');
+    const openLink = document.getElementById('imageModalOpen');
+    const dlLink = document.getElementById('imageModalDownload');
+    img.src = src;
+    openLink.href = src;
+    dlLink.href = src;
+    modal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    const img = document.getElementById('imageModalImg');
+    img.src = '';
+    modal.classList.add('hidden');
 }
 </script>
 

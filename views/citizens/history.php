@@ -185,12 +185,21 @@ include __DIR__ . '/../../includes/header.php';
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <!-- Request Info -->
                         <div class="flex-1">
-                            <div class="flex items-center gap-3 mb-2">
-                                <h3 class="text-lg font-semibold text-white">Request #<?= $request['id'] ?></h3>
-                                <span class="px-3 py-1 rounded-full text-xs font-medium border <?= getStatusBadgeClass($request['status']) ?>">
-                                    <?= getStatusLabel($request['status']) ?>
-                                </span>
-                            </div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-semibold text-white">Request #<?= $request['id'] ?></h3>
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium border <?= getStatusBadgeClass($request['status']) ?>">
+                                        <?= getStatusLabel($request['status']) ?>
+                                    </span>
+                                </div>
+
+                                <?php if (!empty($request['photo_url'])): ?>
+                                <?php $imgSrc = BASE_URL . '/' . ltrim($request['photo_url'], '/'); ?>
+                                <div class="mt-3 mb-3">
+                                    <a href="/Scrap/views/citizens/request_details.php?id=<?= $request['id'] ?>">
+                                        <img src="<?= htmlspecialchars($imgSrc) ?>" alt="Request photo" class="w-40 h-28 object-cover rounded-lg border border-white/10">
+                                    </a>
+                                </div>
+                                <?php endif; ?>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 <div>
