@@ -36,9 +36,11 @@ function sanitizeInput($input) {
 }
 
 // Initialize session with secure settings
-session_start([
-    'cookie_httponly' => true,
-    'cookie_secure' => ENV === 'production',
-    'cookie_samesite' => 'Strict'
-]);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_secure' => ENV === 'production',
+        'cookie_samesite' => 'Strict'
+    ]);
+}
 ?>

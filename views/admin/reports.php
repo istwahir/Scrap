@@ -7,7 +7,13 @@ requireAdmin();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <m                <!-- Points Trends -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Points Awarded Trends</h3>
+                    <div class="h-64">
+                        <canvas id="pointsChart"></canvas>
+                    </div>
+                </div>rset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports & Analytics - Admin Dashboard</title>
     <meta name="color-scheme" content="light dark" />
@@ -56,8 +62,11 @@ requireAdmin();
                             <option value="month">This Month</option>
                             <option value="year">This Year</option>
                         </select>
-                        <button onclick="applyDateFilter()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-                            Apply
+                        <button onclick="applyDateFilter()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
                         </button>
                     </div>
                     <div class="flex gap-3">
@@ -101,8 +110,8 @@ requireAdmin();
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-600 dark:text-slate-400">Total Revenue</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-white">KES <span id="totalRevenue">0</span></p>
+                            <p class="text-sm text-gray-600 dark:text-slate-400">Total Points Awarded</p>
+                            <p class="text-2xl font-bold text-gray-900 dark:text-white" id="totalPoints">0</p>
                         </div>
                     </div>
                 </div>
@@ -183,13 +192,14 @@ requireAdmin();
                             <thead class="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
                                 <tr>
                                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">Requests</th>
-                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">Points</th>
+                                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">Email</th>
+                                    <th class="px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">Requests</th>
+                                    <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase">Points Earned</th>
                                 </tr>
                             </thead>
                             <tbody id="userActivityTable" class="divide-y divide-gray-200 dark:divide-slate-700">
                                 <tr>
-                                    <td colspan="3" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">Loading...</td>
+                                    <td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">Loading...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -224,6 +234,11 @@ requireAdmin();
 
     <script>
         let reportData = {};
+        let chartInstances = {
+            collections: null,
+            materials: null,
+            points: null
+        };
         
         if (!sessionStorage.getItem('user_id') || sessionStorage.getItem('user_role') !== 'admin') {
             window.location.href = '/Scrap/views/auth/login.php';
@@ -239,12 +254,18 @@ requireAdmin();
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
 
+            console.log('Loading reports:', { startDate, endDate });
+
+            // Show loading indicator
+            showLoadingState(true);
+
             try {
                 const response = await fetch(`/Scrap/api/admin/reports.php?start_date=${startDate}&end_date=${endDate}`, {
                     credentials: 'include'
                 });
                 
                 const data = await response.json();
+                console.log('Reports data received:', data);
                 
                 if (data.status === 'success') {
                     reportData = data;
@@ -253,29 +274,66 @@ requireAdmin();
                     renderTopCollectors(data.top_collectors);
                     renderUserActivity(data.user_activity);
                     renderMaterialStats(data.material_stats);
+                } else {
+                    console.error('API returned error:', data.message);
+                    alert('Failed to load reports: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Failed to load reports:', error);
+                alert('Error loading reports. Please check console for details.');
+            } finally {
+                // Hide loading indicator
+                showLoadingState(false);
             }
+        }
+
+        function showLoadingState(isLoading) {
+            const statsCards = document.querySelectorAll('#totalCollections, #totalPoints, #activeUsers, #growthRate');
+            statsCards.forEach(card => {
+                if (isLoading) {
+                    card.style.opacity = '0.5';
+                } else {
+                    card.style.opacity = '1';
+                }
+            });
         }
 
         function updateStats(overview) {
             document.getElementById('totalCollections').textContent = overview.total_collections;
-            document.getElementById('totalRevenue').textContent = Number(overview.total_revenue || 0).toLocaleString();
+            document.getElementById('totalPoints').textContent = Number(overview.total_points || 0).toLocaleString();
             document.getElementById('activeUsers').textContent = overview.active_users;
             document.getElementById('growthRate').textContent = overview.growth_rate;
         }
 
         function renderCharts(data) {
+            // Destroy existing chart instances before creating new ones
+            if (chartInstances.collections) {
+                chartInstances.collections.destroy();
+            }
+            if (chartInstances.materials) {
+                chartInstances.materials.destroy();
+            }
+            if (chartInstances.points) {
+                chartInstances.points.destroy();
+            }
+
+            // Ensure data structure exists with defaults
+            if (!data.timeline) {
+                data.timeline = { labels: [], collections: [], points: [] };
+            }
+            if (!data.materials) {
+                data.materials = { labels: [], values: [] };
+            }
+
             // Collections Over Time
             const collectionsCtx = document.getElementById('collectionsChart').getContext('2d');
-            new Chart(collectionsCtx, {
+            chartInstances.collections = new Chart(collectionsCtx, {
                 type: 'line',
                 data: {
-                    labels: data.timeline.labels,
+                    labels: data.timeline.labels || [],
                     datasets: [{
                         label: 'Collections',
-                        data: data.timeline.collections,
+                        data: data.timeline.collections || [],
                         borderColor: 'rgb(34, 197, 94)',
                         backgroundColor: 'rgba(34, 197, 94, 0.1)',
                         tension: 0.4,
@@ -285,18 +343,29 @@ requireAdmin();
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
                 }
             });
 
             // Materials Distribution
             const materialsCtx = document.getElementById('materialsChart').getContext('2d');
-            new Chart(materialsCtx, {
+            chartInstances.materials = new Chart(materialsCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: data.materials.labels,
+                    labels: data.materials.labels || [],
                     datasets: [{
-                        data: data.materials.values,
+                        data: data.materials.values || [],
                         backgroundColor: [
                             'rgb(59, 130, 246)',
                             'rgb(234, 179, 8)',
@@ -308,19 +377,24 @@ requireAdmin();
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
                 }
             });
 
-            // Revenue Trends
-            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-            new Chart(revenueCtx, {
+            // Points Awarded Trends
+            const pointsCtx = document.getElementById('pointsChart').getContext('2d');
+            chartInstances.points = new Chart(pointsCtx, {
                 type: 'bar',
                 data: {
-                    labels: data.timeline.labels,
+                    labels: data.timeline.labels || [],
                     datasets: [{
-                        label: 'Revenue (KES)',
-                        data: data.timeline.revenue,
+                        label: 'Points Awarded',
+                        data: data.timeline.points || [],
                         backgroundColor: 'rgba(34, 197, 94, 0.8)',
                         borderRadius: 6
                     }]
@@ -328,7 +402,15 @@ requireAdmin();
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
                 }
             });
         }
@@ -353,7 +435,7 @@ requireAdmin();
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-semibold text-green-600 dark:text-green-400">KES ${Number(collector.earnings).toLocaleString()}</p>
+                        <p class="text-sm font-semibold text-green-600 dark:text-green-400">${Number(collector.points_awarded || 0).toLocaleString()} pts</p>
                     </div>
                 </div>
             `).join('');
@@ -363,15 +445,26 @@ requireAdmin();
             const tbody = document.getElementById('userActivityTable');
             
             if (!users || users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">No data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">No data available</td></tr>';
                 return;
             }
 
             tbody.innerHTML = users.map(user => `
                 <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50">
-                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${user.name}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${user.requests}</td>
-                    <td class="px-6 py-4 text-sm font-semibold text-yellow-600 dark:text-yellow-400">${user.points}</td>
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">${user.name}</p>
+                    </td>
+                    <td class="px-6 py-4">
+                        <p class="text-sm text-gray-600 dark:text-slate-400">${user.email || 'N/A'}</p>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
+                            ${user.requests}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <p class="text-sm font-semibold text-yellow-600 dark:text-yellow-400">${Number(user.points_earned || 0).toLocaleString()} pts</p>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -398,10 +491,14 @@ requireAdmin();
         }
 
         document.getElementById('quickRange').addEventListener('change', function(e) {
+            const value = e.target.value;
+            
+            if (!value) return; // Empty selection, do nothing
+            
             const today = new Date();
             let startDate = new Date();
 
-            switch(e.target.value) {
+            switch(value) {
                 case 'today':
                     startDate = new Date();
                     break;
@@ -414,10 +511,31 @@ requireAdmin();
                 case 'year':
                     startDate = new Date(today.getFullYear(), 0, 1);
                     break;
+                default:
+                    return;
             }
+
+            console.log('Quick range selected:', value, { startDate, endDate: today });
 
             document.getElementById('startDate').valueAsDate = startDate;
             document.getElementById('endDate').valueAsDate = today;
+            
+            // Reset dropdown to default
+            e.target.value = '';
+            
+            // Load reports with new dates
+            loadReports();
+        });
+
+        // Auto-update when start date changes
+        document.getElementById('startDate').addEventListener('change', function() {
+            console.log('Start date changed:', this.value);
+            loadReports();
+        });
+
+        // Auto-update when end date changes
+        document.getElementById('endDate').addEventListener('change', function() {
+            console.log('End date changed:', this.value);
             loadReports();
         });
 
@@ -432,7 +550,7 @@ requireAdmin();
             fetch('/Scrap/api/logout.php', { method: 'POST', credentials: 'include' })
                 .then(() => {
                     sessionStorage.clear();
-                    window.location.href = '/Scrap/views/auth/login.php';
+                    window.location.href = '/Scrap/views/auth/login.php?logout=1';
                 });
         }
 

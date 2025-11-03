@@ -120,8 +120,8 @@ requireAdmin();
                         <select id="statusFilter" class="px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500 dark:text-white">
                             <option value="">All Status</option>
                             <option value="pending">Pending</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="in_progress">In Progress</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="en_route">En Route</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
@@ -235,8 +235,9 @@ requireAdmin();
                 const matchesDate = !dateFilter || r.created_at.startsWith(dateFilter);
                 const matchesSearch = !searchTerm || 
                     r.id.toString().includes(searchTerm) ||
-                    r.user_name.toLowerCase().includes(searchTerm) ||
-                    r.material.toLowerCase().includes(searchTerm);
+                    (r.user_name && r.user_name.toLowerCase().includes(searchTerm)) ||
+                    (r.materials && r.materials.toLowerCase().includes(searchTerm)) ||
+                    (r.pickup_address && r.pickup_address.toLowerCase().includes(searchTerm));
                 return matchesStatus && matchesDate && matchesSearch;
             });
 
@@ -257,15 +258,24 @@ requireAdmin();
                         <p class="font-medium text-gray-900 dark:text-white">#${request.id}</p>
                     </td>
                     <td class="px-6 py-4">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">${request.user_name}</p>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">${request.user_phone}</p>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">${request.user_name || 'Unknown'}</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">${request.user_phone || 'No phone'}</p>
                     </td>
                     <td class="px-6 py-4">
-                        <p class="text-sm text-gray-900 dark:text-white capitalize">${request.material}</p>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">${request.weight || 'N/A'} kg</p>
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900 dark:text-white capitalize">${request.materials || 'Not specified'}</p>
+                                <p class="text-sm text-gray-500 dark:text-slate-400">${request.estimated_weight ? request.estimated_weight + ' kg' : 'Weight not set'}</p>
+                            </div>
+                            ${request.photo_url ? `
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Has photo">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            ` : ''}
+                        </div>
                     </td>
                     <td class="px-6 py-4">
-                        <p class="text-sm text-gray-900 dark:text-white">${request.location || 'N/A'}</p>
+                        <p class="text-sm text-gray-900 dark:text-white">${request.pickup_address || 'Address not provided'}</p>
                     </td>
                     <td class="px-6 py-4">
                         <p class="text-sm text-gray-900 dark:text-white">${request.collector_name || 'Unassigned'}</p>
@@ -290,8 +300,8 @@ requireAdmin();
         function getStatusBadge(status) {
             const badges = {
                 pending: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400">Pending</span>',
-                accepted: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">Accepted</span>',
-                in_progress: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">In Progress</span>',
+                assigned: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">Assigned</span>',
+                en_route: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">En Route</span>',
                 completed: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400">Completed</span>',
                 cancelled: '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400">Cancelled</span>'
             };
@@ -326,37 +336,61 @@ requireAdmin();
                                 </div>
                                 <div>
                                     <p class="text-sm text-gray-500 dark:text-slate-400">User</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.user_name}</p>
-                                    <p class="text-sm text-gray-500 dark:text-slate-400">${request.user_phone}</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.user_name || 'Unknown'}</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">${request.user_phone || 'No phone'}</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">${request.user_email || 'No email'}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-gray-500 dark:text-slate-400">Collector</p>
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">${request.collector_name || 'Unassigned'}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500 dark:text-slate-400">Material</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white capitalize">${request.material}</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Materials</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white capitalize">${request.materials || 'Not specified'}</p>
                                 </div>
                                 <div>
-                                    <p class="text-sm text-gray-500 dark:text-slate-400">Weight</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.weight || 'N/A'} kg</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Estimated Weight</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.estimated_weight ? request.estimated_weight + ' kg' : 'Not specified'}</p>
                                 </div>
                                 <div class="col-span-2">
-                                    <p class="text-sm text-gray-500 dark:text-slate-400">Location</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.location || 'N/A'}</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Pickup Address</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.pickup_address || 'Address not provided'}</p>
                                 </div>
+                                ${request.pickup_date ? `
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Pickup Date</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${new Date(request.pickup_date).toLocaleDateString()}</p>
+                                </div>
+                                ` : ''}
+                                ${request.pickup_time ? `
+                                <div>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Pickup Time</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.pickup_time}</p>
+                                </div>
+                                ` : ''}
+                                ${request.notes ? `
                                 <div class="col-span-2">
-                                    <p class="text-sm text-gray-500 dark:text-slate-400">Description</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.description || 'N/A'}</p>
+                                    <p class="text-sm text-gray-500 dark:text-slate-400">Notes</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${request.notes}</p>
                                 </div>
+                                ` : ''}
+                                ${request.photo_url ? `
+                                <div class="col-span-2">
+                                    <p class="text-sm text-gray-500 dark:text-slate-400 mb-2">Photo</p>
+                                    <img src="${request.photo_url.startsWith('http') ? request.photo_url : (request.photo_url.startsWith('public/') ? '/Scrap/' + request.photo_url : '/Scrap/public/uploads/requests/' + request.photo_url)}" 
+                                         alt="Request photo" 
+                                         class="rounded-lg max-h-64 w-auto object-cover border border-gray-200 dark:border-slate-600 shadow-sm"
+                                         onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-sm text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-700 p-4 rounded-lg text-center\\'>📷 Image not available<br><span class=\\'text-xs\\'>${request.photo_url}</span></div>'">
+                                </div>
+                                ` : ''}
                                 <div>
                                     <p class="text-sm text-gray-500 dark:text-slate-400">Created</p>
                                     <p class="text-sm font-medium text-gray-900 dark:text-white">${new Date(request.created_at).toLocaleString()}</p>
                                 </div>
-                                ${request.completed_at ? `
+                                ${request.updated_at && request.status === 'completed' ? `
                                 <div>
                                     <p class="text-sm text-gray-500 dark:text-slate-400">Completed</p>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${new Date(request.completed_at).toLocaleString()}</p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">${new Date(request.updated_at).toLocaleString()}</p>
                                 </div>
                                 ` : ''}
                             </div>
@@ -380,7 +414,7 @@ requireAdmin();
             fetch('/Scrap/api/logout.php', { method: 'POST', credentials: 'include' })
                 .then(() => {
                     sessionStorage.clear();
-                    window.location.href = '/Scrap/views/auth/login.php';
+                    window.location.href = '/Scrap/views/auth/login.php?logout=1';
                 });
         }
 

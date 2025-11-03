@@ -1,3 +1,63 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// Check if user already has a collector record
+if (!empty($_SESSION['user_id'])) {
+    try {
+        require_once __DIR__ . '/../../config.php';
+        $pdo = new PDO(
+            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME,
+            DB_USER,
+            DB_PASS
+        );
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        // Check if collector record exists
+        $stmt = $pdo->prepare("SELECT id FROM collectors WHERE user_id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        if ($stmt->fetch()) {
+            // User already has a collector record, redirect to profile
+            header('Location: /Scrap/public/collectors/profile.php');
+            exit;
+        }
+    } catch (Exception $e) {
+        // Continue to registration page if check fails
+        error_log("Error checking collector record: " . $e->getMessage());
+    }
+}
+
+$user_name = '';
+$user_phone = '';
+if (!empty($_SESSION['user_id'])) {
+    require_once __DIR__ . '/../../models/User.php';
+    $userModel = new User();
+    $u = $userModel->findById($_SESSION['user_id']);
+    if ($u) {
+        $user_name = $u['name'] ?? '';
+        $user_phone = $u['phone'] ?? '';
+        
+        // Format phone number to +254 format if needed
+        if ($user_phone) {
+            // Remove any spaces, dashes, or parentheses
+            $user_phone = preg_replace('/[\s\-\(\)]/', '', $user_phone);
+            
+            // If it starts with 0, replace with +254
+            if (substr($user_phone, 0, 1) === '0') {
+                $user_phone = '+254' . substr($user_phone, 1);
+            }
+            // If it starts with 254 without +, add +
+            elseif (substr($user_phone, 0, 3) === '254' && substr($user_phone, 0, 4) !== '+254') {
+                $user_phone = '+' . $user_phone;
+            }
+            // If it doesn't start with + or 254 or 0, assume it needs +254
+            elseif (substr($user_phone, 0, 1) !== '+' && substr($user_phone, 0, 3) !== '254') {
+                $user_phone = '+254' . $user_phone;
+            }
+        }
+    }
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,7 +107,10 @@
         <nav class="relative z-10 text-white">
             <div class="mx-auto max-w-6xl px-4">
                 <div class="flex h-14 items-center justify-between">
-                    <a href="/Scrap/" class="font-semibold">Kiambu Recycling</a>
+                    <div class="flex items-center gap-3">
+                        <a href="/Scrap/views/citizens/profile.php" class="text-2xl">←</a>
+                        <a href="/Scrap/" class="font-semibold">Kiambu Recycling</a>
+                    </div>
                     <div class="flex items-center gap-4 text-sm">
                         <a href="/Scrap/views/auth/login.php" class="hover:text-emerald-200">Login</a>
                     </div>
@@ -94,11 +157,11 @@
                                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <label class="text-sm">
                                             <span class="text-white/80">Full Name</span>
-                                            <input type="text" name="fullName" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
+                                            <input type="text" name="fullName" required value="<?php echo htmlspecialchars($user_name); ?>" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">Phone Number</span>
-                                            <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$" placeholder="+254700000000" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
+                                            <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$" placeholder="+254700000000" value="<?php echo htmlspecialchars($user_phone); ?>" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">ID Number</span>
@@ -106,12 +169,12 @@
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">Date of Birth</span>
-                                            <input type="date" name="dateOfBirth" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-0"/>
+                                            <input type="date" name="dateOfBirth" required class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-0" id="dobInput"/>
                             </label>
                         </div>
                         <label class="block text-sm">
                                         <span class="text-white/80">Residential Address</span>
-                                        <textarea name="address" required rows="2" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"></textarea>
+                                        <textarea name="address" rows="2" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"></textarea>
                         </label>
                                     <div class="rounded-2xl border border-white/10 bg-white/5">
                                         <div class="flex items-center justify-between gap-4 border-b border-white/10 px-3 py-2">
@@ -137,7 +200,7 @@
                             </label>
                                             <label class="text-sm">
                                                 <span class="text-white/80">Vehicle Registration</span>
-                                                <input type="text" name="vehicleReg" required placeholder="e.g., KAA 123B" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
+                                                <input type="text" name="vehicleReg" required placeholder="e.g., KAA 123B" pattern="^K[A-Z]{2}\s?\d{3}[A-Z]$" title="Enter Kenyan vehicle registration (e.g., KAA 123B)" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                         </div>
 
@@ -204,16 +267,16 @@
                             <div>
                                             <label class="text-sm text-white/80">ID Card Photo (Front)</label>
                                             <div class="mt-2 rounded-2xl border border-dashed border-white/20 bg-white/5 p-4 text-center">
-                                    <input id="idCardFront" type="file" name="idCardFront" accept="image/*" required class="hidden"/>
-                                                <label for="idCardFront" class="block cursor-pointer text-emerald-300 hover:underline">Click to upload</label>
+                                    <input id="idCardFront" type="file" name="idCardFront" accept="image/jpeg,image/jpg,image/png,application/pdf" required class="hidden"/>
+                                                <label for="idCardFront" class="block cursor-pointer text-emerald-300 hover:underline">Click to upload (JPG, PNG, PDF)</label>
                                     <img id="previewFront" alt="Preview front" class="mx-auto mt-3 hidden h-28 rounded-lg object-cover"/>
                                 </div>
                             </div>
                             <div>
                                             <label class="text-sm text-white/80">ID Card Photo (Back)</label>
                                             <div class="mt-2 rounded-2xl border border-dashed border-white/20 bg-white/5 p-4 text-center">
-                                    <input id="idCardBack" type="file" name="idCardBack" accept="image/*" required class="hidden"/>
-                                                <label for="idCardBack" class="block cursor-pointer text-emerald-300 hover:underline">Click to upload</label>
+                                    <input id="idCardBack" type="file" name="idCardBack" accept="image/jpeg,image/jpg,image/png,application/pdf" required class="hidden"/>
+                                                <label for="idCardBack" class="block cursor-pointer text-emerald-300 hover:underline">Click to upload (JPG, PNG, PDF)</label>
                                     <img id="previewBack" alt="Preview back" class="mx-auto mt-3 hidden h-28 rounded-lg object-cover"/>
                                 </div>
                             </div>
@@ -270,14 +333,46 @@
                 selectedLocation = latlng;
             }
 
-            map.on('click', function(e) { setMarker(e.latlng); });
+            async function reverseGeocodeAddress(lat, lon) {
+                try {
+                    const resp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        let addr = '';
+                        if (data.locality && data.countryName) {
+                            addr = `${data.locality}, ${data.countryName}`;
+                        } else if (data.city) {
+                            addr = data.city;
+                            if (data.countryName) addr += ', ' + data.countryName;
+                        } else if (data.principalSubdivision) {
+                            addr = data.principalSubdivision;
+                            if (data.countryName) addr += ', ' + data.countryName;
+                        } else if (data.countryName) {
+                            addr = data.countryName;
+                        }
+                        if (!addr) addr = 'Location detected (please provide more details)';
+                        const textarea = document.querySelector('textarea[name="address"]');
+                        textarea.value = addr;
+                    }
+                } catch (err) {
+                    console.error('Reverse geocoding error:', err);
+                }
+            }
+
+            map.on('click', function(e) { 
+                setMarker(e.latlng); 
+                reverseGeocodeAddress(e.latlng.lat, e.latlng.lng);
+            });
 
             document.getElementById('useMyLocationBtn').addEventListener('click', () => {
                 if (!navigator.geolocation) return showAlert('Geolocation is not supported by your browser');
-                navigator.geolocation.getCurrentPosition(pos => {
-                    const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const latlng = { lat, lng: lon };
                     map.setView(latlng, 14);
                     setMarker(latlng);
+                    reverseGeocodeAddress(lat, lon);
                 }, () => showAlert('Unable to retrieve your location'));
             });
 
@@ -291,18 +386,68 @@
             const goodConduct = document.getElementById('goodConduct');
             const goodConductName = document.getElementById('goodConductName');
 
+            function validateFileType(file, fieldName) {
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+                const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf'];
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(extension)) {
+                    showAlert(`${fieldName}: Please upload JPG, PNG, or PDF files only.`);
+                    return false;
+                }
+                
+                // Check file size (5MB max)
+                if (file.size > 5 * 1024 * 1024) {
+                    showAlert(`${fieldName}: File size must be less than 5MB.`);
+                    return false;
+                }
+                
+                return true;
+            }
+
             function previewImage(input, imgEl) {
                 const file = input.files && input.files[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onload = e => { imgEl.src = e.target.result; imgEl.classList.remove('hidden'); };
-                reader.readAsDataURL(file);
+                
+                // Validate file type
+                const fieldLabel = input.id.replace(/([A-Z])/g, ' $1').trim();
+                if (!validateFileType(file, fieldLabel)) {
+                    input.value = '';
+                    return;
+                }
+                
+                // Only preview images, not PDFs
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = e => { imgEl.src = e.target.result; imgEl.classList.remove('hidden'); };
+                    reader.readAsDataURL(file);
+                }
             }
 
             idFront?.addEventListener('change', () => previewImage(idFront, previewFront));
             idBack?.addEventListener('change', () => previewImage(idBack, previewBack));
-            vehicleDoc?.addEventListener('change', () => { const f = vehicleDoc.files?.[0]; if (f) { vehicleDocName.textContent = f.name; vehicleDocName.classList.remove('hidden'); }});
-            goodConduct?.addEventListener('change', () => { const f = goodConduct.files?.[0]; if (f) { goodConductName.textContent = f.name; goodConductName.classList.remove('hidden'); }});
+            vehicleDoc?.addEventListener('change', () => { 
+                const f = vehicleDoc.files?.[0]; 
+                if (f) {
+                    if (validateFileType(f, 'Vehicle Document')) {
+                        vehicleDocName.textContent = f.name; 
+                        vehicleDocName.classList.remove('hidden');
+                    } else {
+                        vehicleDoc.value = '';
+                    }
+                }
+            });
+            goodConduct?.addEventListener('change', () => { 
+                const f = goodConduct.files?.[0]; 
+                if (f) {
+                    if (validateFileType(f, 'Good Conduct Certificate')) {
+                        goodConductName.textContent = f.name; 
+                        goodConductName.classList.remove('hidden');
+                    } else {
+                        goodConduct.value = '';
+                    }
+                }
+            });
 
             // Alerts
             function showAlert(msg) {
@@ -344,14 +489,39 @@
 
             function validateCurrentStep() {
                 const container = document.getElementById('step' + currentStep);
+                // Only validate native-required constraints for visible required fields
                 const inputs = container.querySelectorAll('input[required], select[required], textarea[required]');
                 for (const input of inputs) {
                     if (!input.checkValidity()) { input.reportValidity(); return false; }
                 }
-                if (currentStep === 1 && !selectedLocation) {
-                    showAlert('Please select your location on the map.');
-                    return false;
+
+                // Step 1: either a map location must be selected OR the residential address provided
+                if (currentStep === 1) {
+                    const addressVal = (document.querySelector('textarea[name="address"]') || {}).value || '';
+                    if (!selectedLocation) {
+                        showAlert('Please select your location on the map by clicking on it or using "Use my location" button.');
+                        return false;
+                    }
+
+                    // Date of birth: ensure age >= 18
+                    const dobInput = document.querySelector('input[name="dateOfBirth"]');
+                    if (dobInput && dobInput.value) {
+                        const dob = new Date(dobInput.value + 'T00:00:00');
+                        if (isNaN(dob.getTime())) {
+                            showAlert('Please enter a valid date of birth.');
+                            return false;
+                        }
+                        const today = new Date();
+                        let age = today.getFullYear() - dob.getFullYear();
+                        const m = today.getMonth() - dob.getMonth();
+                        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                        if (age < 18) {
+                            showAlert('You must be at least 18 years old to register.');
+                            return false;
+                        }
+                    }
                 }
+
                 if (currentStep === 2) {
                     const hasArea = document.querySelectorAll('input[name="areas[]"]:checked').length > 0;
                     const hasMat = document.querySelectorAll('input[name="materials[]"]:checked').length > 0;
@@ -372,6 +542,13 @@
             document.getElementById('registrationForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 if (!validateCurrentStep()) return;
+                
+                // Final check: ensure location is selected
+                if (!selectedLocation) {
+                    showAlert('Please select your location on the map before submitting.');
+                    return;
+                }
+                
                 const submitBtn = document.getElementById('submitBtn');
                 const nextBtn = document.getElementById('nextBtn');
                 submitBtn.disabled = true; nextBtn.disabled = true; submitBtn.textContent = 'Submitting…';
@@ -410,7 +587,19 @@
                 }
             });
 
-            // Init
+            // Set max date for DOB input to today minus 18 years
+            function setDOBMax() {
+                const dobInput = document.getElementById('dobInput');
+                if (!dobInput) return;
+                const today = new Date();
+                today.setFullYear(today.getFullYear() - 18);
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                dobInput.max = `${yyyy}-${mm}-${dd}`;
+            }
+
+            setDOBMax();
             showStep(1);
         </script>
     </body>

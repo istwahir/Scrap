@@ -174,7 +174,9 @@ header("Expires: 0");
         // Load earnings data
         async function loadEarningsData(period = 'monthly') {
             try {
-                const response = await fetch(`/Scrap/api/collectors/earnings.php?period=${period}`, { credentials: 'include' });
+                const response = await fetch(`/Scrap/api/collectors/earnings.php?period=${period}`, { 
+                    credentials: 'same-origin' 
+                });
                 if (response.status === 401) {
                     window.location.href = '/Scrap/views/auth/login.php';
                     return;
@@ -188,9 +190,13 @@ header("Expires: 0");
                     updateStats(data.summary);
                     updateCharts(data.trend, data.materialBreakdown);
                     updateTable(data.history);
+                } else {
+                    console.error('API error:', data.message);
+                    alert('Failed to load earnings: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Failed to load earnings data:', error);
+                alert('Network error: ' + error.message);
             }
         }
 

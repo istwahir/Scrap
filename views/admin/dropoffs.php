@@ -159,40 +159,60 @@ requireAdmin();
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Location *</label>
-                    <input type="text" id="dropoffLocation" name="location" required
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address *</label>
+                    <input type="text" id="dropoffLocation" name="address" required
                            class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Latitude</label>
-                        <input type="number" step="0.000001" id="dropoffLat" name="latitude"
+                        <input type="number" step="0.00000001" id="dropoffLat" name="lat"
                                class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Longitude</label>
-                        <input type="number" step="0.000001" id="dropoffLng" name="longitude"
+                        <input type="number" step="0.00000001" id="dropoffLng" name="lng"
                                class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Contact</label>
-                    <input type="text" id="dropoffContact" name="contact"
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Contact Phone</label>
+                    <input type="text" id="dropoffContact" name="contact_phone"
                            class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Operating Hours</label>
-                    <input type="text" id="dropoffHours" name="hours" placeholder="e.g., Mon-Fri: 8AM-5PM"
+                    <input type="text" id="dropoffHours" name="operating_hours" placeholder="e.g., Mon-Fri: 8AM-5PM"
                            class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Description</label>
-                    <textarea id="dropoffDescription" name="description" rows="3"
-                              class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 dark:text-white"></textarea>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Accepted Materials</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="plastic" class="rounded">
+                            <span>Plastic</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="paper" class="rounded">
+                            <span>Paper</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="metal" class="rounded">
+                            <span>Metal</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="glass" class="rounded">
+                            <span>Glass</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="electronics" class="rounded">
+                            <span>Electronics</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div>
@@ -261,8 +281,10 @@ requireAdmin();
             let filtered = dropoffs.filter(d => {
                 const matchesStatus = !statusFilter || d.status === statusFilter;
                 const matchesSearch = !searchTerm || 
-                    d.name.toLowerCase().includes(searchTerm) ||
-                    d.location.toLowerCase().includes(searchTerm);
+                    (d.name && d.name.toLowerCase().includes(searchTerm)) ||
+                    (d.address && d.address.toLowerCase().includes(searchTerm)) ||
+                    (d.materials && d.materials.toLowerCase().includes(searchTerm)) ||
+                    (d.contact_phone && d.contact_phone.toLowerCase().includes(searchTerm));
                 return matchesStatus && matchesSearch;
             });
 
@@ -285,31 +307,35 @@ requireAdmin();
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     </svg>
-                                    ${dropoff.location}
+                                    ${dropoff.address || 'N/A'}
                                 </p>
                             </div>
                             ${getStatusBadge(dropoff.status)}
                         </div>
 
-                        ${dropoff.description ? `
-                        <p class="text-sm text-gray-600 dark:text-slate-400">${dropoff.description}</p>
+                        ${dropoff.materials ? `
+                        <div class="flex flex-wrap gap-1">
+                            ${(dropoff.materials || '').split(',').filter(m => m.trim()).map(m => `
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400">${m.trim()}</span>
+                            `).join('')}
+                        </div>
                         ` : ''}
 
                         <div class="space-y-2 text-sm">
-                            ${dropoff.contact ? `
+                            ${dropoff.contact_phone ? `
                             <div class="flex items-center gap-2 text-gray-600 dark:text-slate-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                                 </svg>
-                                ${dropoff.contact}
+                                ${dropoff.contact_phone}
                             </div>
                             ` : ''}
-                            ${dropoff.hours ? `
+                            ${dropoff.operating_hours ? `
                             <div class="flex items-center gap-2 text-gray-600 dark:text-slate-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                ${dropoff.hours}
+                                ${dropoff.operating_hours}
                             </div>
                             ` : ''}
                         </div>
@@ -350,19 +376,33 @@ requireAdmin();
 
         async function editDropoff(id) {
             const dropoff = dropoffs.find(d => d.id === id);
-            if (!dropoff) return;
+            if (!dropoff) {
+                console.error('Dropoff not found:', id);
+                return;
+            }
 
+            console.log('Editing dropoff:', dropoff); // Debug log
+
+            // Update modal title
             document.getElementById('modalTitle').textContent = 'Edit Drop-off Point';
-            document.getElementById('dropoffId').value = dropoff.id;
-            document.getElementById('dropoffName').value = dropoff.name;
-            document.getElementById('dropoffLocation').value = dropoff.location;
-            document.getElementById('dropoffLat').value = dropoff.latitude || '';
-            document.getElementById('dropoffLng').value = dropoff.longitude || '';
-            document.getElementById('dropoffContact').value = dropoff.contact || '';
-            document.getElementById('dropoffHours').value = dropoff.hours || '';
-            document.getElementById('dropoffDescription').value = dropoff.description || '';
-            document.getElementById('dropoffStatus').value = dropoff.status;
             
+            // Populate form fields with database column names
+            document.getElementById('dropoffId').value = dropoff.id || '';
+            document.getElementById('dropoffName').value = dropoff.name || '';
+            document.getElementById('dropoffLocation').value = dropoff.address || '';
+            document.getElementById('dropoffLat').value = dropoff.lat || '';
+            document.getElementById('dropoffLng').value = dropoff.lng || '';
+            document.getElementById('dropoffContact').value = dropoff.contact_phone || '';
+            document.getElementById('dropoffHours').value = dropoff.operating_hours || '';
+            document.getElementById('dropoffStatus').value = dropoff.status || 'active';
+            
+            // Handle materials checkboxes
+            const materials = dropoff.materials ? dropoff.materials.split(',') : [];
+            document.querySelectorAll('input[name="materials[]"]').forEach(checkbox => {
+                checkbox.checked = materials.includes(checkbox.value);
+            });
+            
+            // Show modal
             document.getElementById('dropoffModal').classList.remove('hidden');
         }
 
@@ -390,20 +430,27 @@ requireAdmin();
 
         function closeModal() {
             document.getElementById('dropoffModal').classList.add('hidden');
+            document.getElementById('dropoffForm').reset();
+            document.getElementById('dropoffId').value = '';
         }
 
         document.getElementById('dropoffForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            // Get selected materials
+            const materials = Array.from(document.querySelectorAll('input[name="materials[]"]:checked'))
+                .map(cb => cb.value)
+                .join(',');
+            
             const formData = {
                 id: document.getElementById('dropoffId').value,
                 name: document.getElementById('dropoffName').value,
-                location: document.getElementById('dropoffLocation').value,
-                latitude: document.getElementById('dropoffLat').value,
-                longitude: document.getElementById('dropoffLng').value,
-                contact: document.getElementById('dropoffContact').value,
-                hours: document.getElementById('dropoffHours').value,
-                description: document.getElementById('dropoffDescription').value,
+                address: document.getElementById('dropoffLocation').value,
+                lat: document.getElementById('dropoffLat').value,
+                lng: document.getElementById('dropoffLng').value,
+                contact_phone: document.getElementById('dropoffContact').value,
+                operating_hours: document.getElementById('dropoffHours').value,
+                materials: materials,
                 status: document.getElementById('dropoffStatus').value
             };
 
@@ -435,7 +482,7 @@ requireAdmin();
             fetch('/Scrap/api/logout.php', { method: 'POST', credentials: 'include' })
                 .then(() => {
                     sessionStorage.clear();
-                    window.location.href = '/Scrap/views/auth/login.php';
+                    window.location.href = '/Scrap/views/auth/login.php?logout=1';
                 });
         }
 

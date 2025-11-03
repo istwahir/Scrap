@@ -6,19 +6,23 @@ session_start();
 require_once __DIR__ . '/../../config.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
     exit;
 }
 
 try {
+    // Get database connection
+    $conn = getDBConnection();
+    
     // GET - Fetch drop-offs
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $conn->prepare("
             SELECT 
                 d.*,
                 COUNT(DISTINCT r.id) as collection_count
-            FROM dropoffs d
-            LEFT JOIN requests r ON r.dropoff_id = d.id
+            FROM dropoff_points d
+            LEFT JOIN collection_requests r ON r.dropoff_point_id = d.id
             GROUP BY d.id
             ORDER BY d.created_at DESC
         ");
@@ -30,11 +34,12 @@ try {
             SELECT 
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                (SELECT COUNT(*) FROM requests WHERE dropoff_id IS NOT NULL) as total_collections,
-                (SELECT COUNT(*) FROM requests WHERE dropoff_id IS NOT NULL 
+                SUM(CASE WHEN status = 'inactive' THEN 1 ELSE 0 END) as inactive,
+                (SELECT COUNT(*) FROM collection_requests WHERE dropoff_point_id IS NOT NULL) as total_collections,
+                (SELECT COUNT(*) FROM collection_requests WHERE dropoff_point_id IS NOT NULL 
                  AND MONTH(created_at) = MONTH(CURRENT_DATE()) 
                  AND YEAR(created_at) = YEAR(CURRENT_DATE())) as month_collections
-            FROM dropoffs
+            FROM dropoff_points
         ");
         $statsStmt->execute();
         $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
@@ -50,7 +55,7 @@ try {
     elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $input = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($input['name']) || !isset($input['location'])) {
+        if (!isset($input['name']) || !isset($input['address'])) {
             echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
             exit;
         }
@@ -58,19 +63,19 @@ try {
         if (!empty($input['id'])) {
             // Update existing
             $stmt = $conn->prepare("
-                UPDATE dropoffs 
-                SET name = ?, location = ?, latitude = ?, longitude = ?, 
-                    contact = ?, hours = ?, description = ?, status = ?
+                UPDATE dropoff_points 
+                SET name = ?, address = ?, lat = ?, lng = ?, 
+                    contact_phone = ?, operating_hours = ?, materials = ?, status = ?
                 WHERE id = ?
             ");
             $stmt->execute([
                 $input['name'],
-                $input['location'],
-                $input['latitude'] ?: null,
-                $input['longitude'] ?: null,
-                $input['contact'] ?: null,
-                $input['hours'] ?: null,
-                $input['description'] ?: null,
+                $input['address'],
+                $input['lat'] ?: null,
+                $input['lng'] ?: null,
+                $input['contact_phone'] ?: null,
+                $input['operating_hours'] ?: null,
+                $input['materials'] ?: null,
                 $input['status'] ?: 'active',
                 $input['id']
             ]);
@@ -78,17 +83,17 @@ try {
         } else {
             // Create new
             $stmt = $conn->prepare("
-                INSERT INTO dropoffs (name, location, latitude, longitude, contact, hours, description, status)
+                INSERT INTO dropoff_points (name, address, lat, lng, contact_phone, operating_hours, materials, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $input['name'],
-                $input['location'],
-                $input['latitude'] ?: null,
-                $input['longitude'] ?: null,
-                $input['contact'] ?: null,
-                $input['hours'] ?: null,
-                $input['description'] ?: null,
+                $input['address'],
+                $input['lat'] ?: null,
+                $input['lng'] ?: null,
+                $input['contact_phone'] ?: null,
+                $input['operating_hours'] ?: null,
+                $input['materials'] ?: null,
                 $input['status'] ?: 'active'
             ]);
             $message = 'Drop-off point created successfully';
@@ -97,7 +102,7 @@ try {
         echo json_encode(['status' => 'success', 'message' => $message]);
     }
     
-    // DELETE - Remove drop-off
+        // DELETE - Remove drop-off
     elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $input = json_decode(file_get_contents('php://input'), true);
         
@@ -106,15 +111,26 @@ try {
             exit;
         }
         
-        $stmt = $conn->prepare("DELETE FROM dropoffs WHERE id = ?");
+        $stmt = $conn->prepare("DELETE FROM dropoff_points WHERE id = ?");
         $stmt->execute([$input['id']]);
         
         echo json_encode(['status' => 'success', 'message' => 'Drop-off point deleted successfully']);
     }
     
 } catch (PDOException $e) {
+    error_log("Admin Dropoffs API Error: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+    ]);
+} catch (Exception $e) {
+    error_log("Admin Dropoffs API Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Server error: ' . $e->getMessage()
     ]);
 }
+?>

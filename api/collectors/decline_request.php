@@ -1,4 +1,9 @@
 <?php
+// Start session first
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../../config.php';
 require_once '../../controllers/AuthController.php';
 
@@ -46,20 +51,21 @@ try {
     // Start transaction
     $pdo->beginTransaction();
 
-    // Update request status
+    // When declining, set collector_id to NULL so request can be reassigned
+    // Keep status as 'pending' for re-assignment by auto-assignment system
     $stmt = $pdo->prepare("
         UPDATE collection_requests 
         SET 
-            status = 'declined',
-            collector_id = ?,
-            declined_at = NOW()
+            collector_id = NULL,
+            updated_at = NOW()
         WHERE id = ? 
+        AND collector_id = ?
         AND status = 'pending'
     ");
-    $stmt->execute([$collector['id'], $data['request_id']]);
+    $stmt->execute([$data['request_id'], $collector['id']]);
 
     if ($stmt->rowCount() === 0) {
-        throw new Exception('Request not found or already processed');
+        throw new Exception('Request not found, not assigned to you, or already processed');
     }
 
     // Get request details for notification
@@ -72,9 +78,32 @@ try {
     $stmt->execute([$data['request_id']]);
     $request = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Try to auto-assign to another collector
+    require_once '../../includes/CollectorAssignment.php';
+    $assignmentSystem = new CollectorAssignment($pdo);
+    
+    $requestData = [
+        'materials' => $request['materials'],
+        'latitude' => $request['lat'],
+        'longitude' => $request['lng'],
+        'pickup_address' => isset($request['pickup_address']) ? $request['pickup_address'] : $request['address']
+    ];
+    
+    // Exclude the collector who declined
+    $newCollectorId = $assignmentSystem->findBestCollector($requestData);
+    
+    if ($newCollectorId && $newCollectorId != $collector['id']) {
+        // Reassign to new collector
+        $stmt = $pdo->prepare("UPDATE collection_requests SET collector_id = ? WHERE id = ?");
+        $stmt->execute([$newCollectorId, $data['request_id']]);
+        error_log("Request {$data['request_id']} reassigned to collector {$newCollectorId} after decline");
+    } else {
+        error_log("Request {$data['request_id']} declined - no other suitable collector found");
+    }
+
     // Send SMS notification to customer (mock in development)
-    if (MOCK_SMS) {
-        error_log("SMS to {$request['customer_phone']}: Your collection request has been declined. Please try another collector.");
+    if (defined('MOCK_SMS') && MOCK_SMS) {
+        error_log("SMS to {$request['customer_phone']}: Your collection request is being reassigned to another collector.");
     }
 
     // Commit transaction

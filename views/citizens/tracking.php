@@ -212,15 +212,16 @@
             tracker.startTracking();
         }
 
-        // Logout function
+                // Logout function
         async function logout() {
             try {
                 await fetch('/Scrap/api/logout.php', {
                     method: 'POST',
                     credentials: 'include'
                 });
+                // Clear sessionStorage before redirecting
                 sessionStorage.clear();
-                window.location.href = '/Scrap/views/auth/login.php';
+                window.location.href = '/Scrap/views/auth/login.php?logout=1';
             } catch (error) {
                 console.error('Logout failed:', error);
             }

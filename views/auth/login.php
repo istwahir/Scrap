@@ -119,6 +119,14 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
     </div>
 
     <script>
+        // Clear sessionStorage on page load if coming from logout
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('logout') === '1') {
+            sessionStorage.clear();
+            // Remove the logout parameter from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         // Check if already authenticated and redirect to appropriate dashboard
         if (sessionStorage.getItem('user_id')) {
             const userRole = sessionStorage.getItem('user_role');
@@ -176,6 +184,7 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
                     headers: {
                         'Content-Type': 'application/json',
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({ email: email, password: password })
                 });
 

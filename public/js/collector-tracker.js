@@ -14,25 +14,25 @@ class CollectorTracker {
         // Initialize collector markers with custom icons
         this.icons = {
             truck: L.icon({
-                iconUrl: '/Scrap/public/images/markers/truck.png',
+                iconUrl: '/Scrap/public/images/markers/truck.svg',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             pickup: L.icon({
-                iconUrl: '/Scrap/public/images/markers/pickup.png',
+                iconUrl: '/Scrap/public/images/markers/pickup.svg',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             tuktuk: L.icon({
-                iconUrl: '/Scrap/public/images/markers/tuktuk.png',
+                iconUrl: '/Scrap/public/images/markers/tuktuk.svg',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
             }),
             motorcycle: L.icon({
-                iconUrl: '/Scrap/public/images/markers/motorcycle.png',
+                iconUrl: '/Scrap/public/images/markers/motorcycle.svg',
                 iconSize: [32, 32],
                 iconAnchor: [16, 32],
                 popupAnchor: [0, -32]
@@ -189,7 +189,7 @@ class CollectorTracker {
 
     // Check if current user is a collector
     isCollector() {
-        return sessionStorage.getItem('role') === 'collector';
+        return sessionStorage.getItem('user_role') === 'collector';
     }
 
     // Start sending location updates (for collectors)
@@ -205,6 +205,7 @@ class CollectorTracker {
                     try {
                         const response = await fetch('/Scrap/api/collectors/update_location.php', {
                             method: 'POST',
+                            credentials: 'same-origin',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
@@ -223,12 +224,13 @@ class CollectorTracker {
                     }
                 },
                 (error) => {
-                    console.error('Error getting location:', error);
+                    console.warn('Could not get location for update:', error.message);
+                    // Don't throw error, just log it - location will be retried on next interval
                 },
                 {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
+                    enableHighAccuracy: false, // Changed to false for faster, less battery-intensive updates
+                    timeout: 15000, // Increased to 15 seconds
+                    maximumAge: 60000 // Allow cached position up to 1 minute old
                 }
             );
         }, this.options.updateInterval);
@@ -243,22 +245,35 @@ class CollectorTracker {
         sessionStorage.setItem('collectorStatus', status);
 
         try {
-            const position = await this.getCurrentPosition();
+            // Try to get location, but don't fail if it times out
+            let requestBody = { status: status };
+            
+            try {
+                const position = await this.getCurrentPosition();
+                requestBody.latitude = position.coords.latitude;
+                requestBody.longitude = position.coords.longitude;
+            } catch (geoError) {
+                console.warn('Could not get location, updating status only:', geoError.message);
+                // Continue without location - status update will still work
+            }
+
             const response = await fetch('/Scrap/api/collectors/update_location.php', {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    status: status
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to update status');
+                console.error('Update status failed:', data);
+                throw new Error(data.message || 'Failed to update status');
             }
+
+            return data;
         } catch (error) {
             console.error('Error updating status:', error);
             throw error;
@@ -269,9 +284,9 @@ class CollectorTracker {
     getCurrentPosition() {
         return new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
+                enableHighAccuracy: false, // Changed to false for faster response
+                timeout: 15000, // Increased to 15 seconds
+                maximumAge: 60000 // Allow cached position up to 1 minute old
             });
         });
     }

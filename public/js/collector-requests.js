@@ -43,9 +43,11 @@ function addMarker(lat, lng, popupHtml){
 
 async function load(){
   try{
-    let res = await fetch('/Scrap/api/collectors/dashboard.php');
+    let res = await fetch('/Scrap/api/collectors/dashboard.php', {
+      credentials: 'same-origin'
+    });
     if (!res.ok) {
-      try { res = await fetch('/api/collectors/dashboard.php'); } catch(e){}
+      try { res = await fetch('/api/collectors/dashboard.php', { credentials: 'same-origin' }); } catch(e){}
     }
     let json;
     try { json = await res.json(); }
@@ -108,7 +110,12 @@ function renderMap(){
 function escapeHtml(s){ return String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
 async function postJSON(url, payload){
-  const res = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+  const res = await fetch(url, { 
+    method:'POST', 
+    credentials: 'same-origin',
+    headers:{ 'Content-Type':'application/json' }, 
+    body: JSON.stringify(payload) 
+  });
   const json = await res.json().catch(()=>({status:'error', message:'Invalid response'}));
   if (!res.ok || json.status === 'error') throw new Error(json.message || 'API error');
   return json;

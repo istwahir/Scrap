@@ -1,4 +1,9 @@
 <?php
+// Start session first
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../../config.php';
 require_once '../../controllers/AuthController.php';
 
@@ -30,7 +35,7 @@ try {
 
     // Verify collector status
     $stmt = $pdo->prepare("
-        SELECT c.id, c.active_status 
+        SELECT c.id, c.status 
         FROM collectors c 
         WHERE c.user_id = ?
     ");
@@ -43,40 +48,32 @@ try {
         exit;
     }
 
-    if ($collector['active_status'] === 'offline') {
+    if ($collector['status'] !== 'approved') {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'message' => 'Cannot accept requests while offline']);
+        echo json_encode(['status' => 'error', 'message' => 'Collector account not approved']);
         exit;
     }
 
     // Start transaction
     $pdo->beginTransaction();
 
-    // Update request status
+    // Update request status to 'assigned' (accepted by collector)
     $stmt = $pdo->prepare("
         UPDATE collection_requests 
         SET 
-            status = 'accepted',
-            collector_id = ?,
-            accepted_at = NOW()
+            status = 'assigned',
+            updated_at = NOW()
         WHERE id = ? 
+        AND collector_id = ?
         AND status = 'pending'
     ");
-    $stmt->execute([$collector['id'], $data['request_id']]);
+    $stmt->execute([$data['request_id'], $collector['id']]);
 
     if ($stmt->rowCount() === 0) {
-        throw new Exception('Request not found or already processed');
+        throw new Exception('Request not found, not assigned to you, or already processed');
     }
 
-    // Update collector status
-    $stmt = $pdo->prepare("
-        UPDATE collectors 
-        SET active_status = 'on_job'
-        WHERE id = ?
-    ");
-    $stmt->execute([$collector['id']]);
-
-    // Get request details for notification
+    // Get request details for response
     $stmt = $pdo->prepare("
         SELECT r.*, u.name as customer_name, u.phone as customer_phone
         FROM collection_requests r
@@ -87,7 +84,7 @@ try {
     $request = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Send SMS notification to customer (mock in development)
-    if (MOCK_SMS) {
+    if (defined('MOCK_SMS') && MOCK_SMS) {
         error_log("SMS to {$request['customer_phone']}: Your collection request has been accepted. The collector will arrive shortly.");
     }
 
@@ -100,8 +97,8 @@ try {
         'request' => [
             'id' => $request['id'],
             'customer_name' => $request['customer_name'],
-            'address' => $request['address'],
-            'material_type' => $request['material_type']
+            'address' => isset($request['pickup_address']) ? $request['pickup_address'] : $request['address'],
+            'material_type' => isset($request['materials']) ? $request['materials'] : 'Mixed'
         ]
     ]);
 

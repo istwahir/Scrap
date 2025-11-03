@@ -6,6 +6,7 @@ ini_set('log_errors', 1);
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
+require_once __DIR__ . '/../includes/CollectorAssignment.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -38,6 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         'message' => 'Method not allowed'
     ]);
     exit;
+}
+
+// Helper function to sanitize input
+function sanitizeInput($data) {
+    return htmlspecialchars(strip_tags(trim($data)), ENT_QUOTES, 'UTF-8');
 }
 
 try {
@@ -155,8 +161,35 @@ try {
     $timeSlot = $_POST['time'];
     $pickupTime = isset($timeSlotMap[$timeSlot]) ? $timeSlotMap[$timeSlot] : '09:00:00';
     
-    // Handle collector_id and dropoff_point_id - set to NULL if empty
+    // Prepare materials string
+    $materialsString = implode(',', $materials);
+    $estimatedWeight = isset($_POST['weight']) ? floatval($_POST['weight']) : null;
+    $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : null;
+    $pickupAddress = sanitizeInput($_POST['address']);
+    
+    // Smart Auto-Assignment System
+    // Only auto-assign if collector_id not explicitly provided
     $collectorId = (!empty($_POST['collector_id'])) ? intval($_POST['collector_id']) : null;
+    
+    if ($collectorId === null) {
+        // Use smart assignment to find the best collector
+        $assignmentSystem = new CollectorAssignment($db);
+        $requestData = [
+            'materials' => $materialsString,
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'pickup_address' => $pickupAddress
+        ];
+        
+        $collectorId = $assignmentSystem->findBestCollector($requestData);
+        
+        if ($collectorId) {
+            error_log("Smart assignment: Assigned collector ID $collectorId to new request");
+        } else {
+            error_log("Smart assignment: No suitable collector found, request will be unassigned");
+        }
+    }
+    
     $dropoffPointId = (!empty($_POST['dropoff_point_id'])) ? intval($_POST['dropoff_point_id']) : null;
     
     // Insert collection request
@@ -166,11 +199,6 @@ try {
             pickup_address, pickup_date, pickup_time, notes, status
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
     ");
-    
-    // This was failing because sanitizeInput() wasn't defined:
-    $materialsString = implode(',', $materials);
-    $estimatedWeight = isset($_POST['weight']) ? floatval($_POST['weight']) : null;
-    $notes = isset($_POST['notes']) ? sanitizeInput($_POST['notes']) : null;
 
     $stmt->execute([
         $userId,
@@ -179,7 +207,7 @@ try {
         $materialsString,
         $photoPath,
         $estimatedWeight,
-        sanitizeInput($_POST['address']), // This was also failing
+        $pickupAddress,
         $pickupDate,
         $pickupTime,
         $notes
@@ -197,12 +225,23 @@ try {
     // Commit transaction
     $db->commit();
     
-    echo json_encode([
+    // Prepare response
+    $response = [
         'status' => 'success',
         'message' => 'Request created successfully',
         'request_id' => $requestId,
-        'points_earned' => 5
-    ]);
+        'points_earned' => 5,
+        'collector_assigned' => $collectorId !== null
+    ];
+    
+    if ($collectorId) {
+        $response['message'] = 'Request created and assigned to a collector';
+        $response['collector_id'] = $collectorId;
+    } else {
+        $response['message'] = 'Request created. A collector will be assigned soon.';
+    }
+    
+    echo json_encode($response);
     
 } catch (Exception $e) {
     // Rollback transaction on error

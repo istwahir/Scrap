@@ -22,9 +22,8 @@ try {
 
     // Get collector details for this logged-in user
     $stmt = $pdo->prepare('
-        SELECT c.*, ca.name 
+        SELECT c.*
         FROM collectors c
-        JOIN collector_applications ca ON c.application_id = ca.id
         WHERE c.user_id = ?
     ');
     $stmt->execute([$_SESSION['user_id']]);
@@ -45,7 +44,7 @@ try {
         FROM collection_requests
         WHERE collector_id = ?
           AND status = "completed"
-          AND DATE(COALESCE(completed_at, updated_at, created_at)) = CURRENT_DATE
+          AND DATE(updated_at) = CURRENT_DATE
     ');
     $stmt->execute([$collector['id']]);
     $todayStats = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['collection_count' => 0, 'total_earnings' => 0, 'total_weight' => 0];
@@ -81,7 +80,7 @@ try {
         JOIN users u ON r.user_id = u.id
         WHERE r.collector_id = ?
           AND r.status = "completed"
-        ORDER BY r.completed_at DESC
+        ORDER BY r.updated_at DESC
         LIMIT 20
     ');
     $stmt->execute([$collector['id']]);
@@ -90,14 +89,14 @@ try {
     // Earnings trend placeholder (7 days - using weight as proxy, earnings=0)
     $stmt = $pdo->prepare('
         SELECT
-            DATE(COALESCE(completed_at, updated_at, created_at)) as date,
+            DATE(updated_at) as date,
             0 as daily_earnings,
             COALESCE(SUM(estimated_weight),0) as daily_weight
         FROM collection_requests
         WHERE collector_id = ?
           AND status = "completed"
-          AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
-        GROUP BY DATE(COALESCE(completed_at, updated_at, created_at))
+          AND updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+        GROUP BY DATE(updated_at)
         ORDER BY date ASC
     ');
     $stmt->execute([$collector['id']]);
@@ -109,7 +108,7 @@ try {
         FROM collection_requests
         WHERE collector_id = ?
           AND status = "completed"
-          AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+          AND updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
         GROUP BY COALESCE(materials,"unknown")
     ');
     $stmt->execute([$collector['id']]);
@@ -148,15 +147,22 @@ try {
     // Get vehicle info
     $vehicle = ['type' => $collector['vehicle_type'] ?? 'N/A', 'registration' => $collector['vehicle_registration'] ?? 'N/A', 'materials' => []];
     
-    // Get materials this collector handles
-    $stmt = $pdo->prepare('SELECT material_type FROM collector_materials WHERE collector_id = ?');
-    $stmt->execute([$collector['id']]);
-    $vehicle['materials'] = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'material_type');
+    // Get materials this collector handles from JSON field
+    if (!empty($collector['materials_collected'])) {
+        $materialsJson = json_decode($collector['materials_collected'], true);
+        if (is_array($materialsJson)) {
+            $vehicle['materials'] = $materialsJson;
+        }
+    }
     
-    // Get service areas
-    $stmt = $pdo->prepare('SELECT area_name FROM collector_areas WHERE collector_id = ?');
-    $stmt->execute([$collector['id']]);
-    $areas = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'area_name');
+    // Get service areas from JSON field
+    $areas = [];
+    if (!empty($collector['service_areas'])) {
+        $areasJson = json_decode($collector['service_areas'], true);
+        if (is_array($areasJson)) {
+            $areas = $areasJson;
+        }
+    }
 
     // Format response
     echo json_encode([
@@ -166,16 +172,17 @@ try {
             'today_collections' => (int)$todayStats['collection_count'],
             'today_earnings' => (float)$todayStats['total_earnings'],
             'rating' => isset($collector['rating']) ? (float)$collector['rating'] : 0,
-            'total_weight' => (float)$todayStats['total_weight']
+            'total_weight' => (float)$todayStats['total_weight'],
+            'active_status' => isset($collector['active_status']) ? $collector['active_status'] : 'offline'
         ],
         'activeRequests' => array_map(function($r) {
             return [
                 'id' => (int)$r['id'],
                 'customer_name' => $r['customer_name'],
                 'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
-                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
-                'latitude' => isset($r['lat']) ? (float)$r['lat'] : null,
-                'longitude' => isset($r['lng']) ? (float)$r['lng'] : null,
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : '',
+                'latitude' => isset($r['latitude']) ? (float)$r['latitude'] : null,
+                'longitude' => isset($r['longitude']) ? (float)$r['longitude'] : null,
             ];
         }, $activeRequests),
         'pendingRequests' => array_map(function($r) {
@@ -183,7 +190,7 @@ try {
                 'id' => (int)$r['id'],
                 'customer_name' => $r['customer_name'],
                 'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
-                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : '',
                 'created_at' => !empty($r['created_at']) ? date('M j, Y g:i A', strtotime($r['created_at'])) : ''
             ];
         }, $pendingRequests),
@@ -194,8 +201,8 @@ try {
                 'material_type' => isset($r['materials']) ? $r['materials'] : 'Mixed',
                 'weight' => isset($r['estimated_weight']) ? (float)$r['estimated_weight'] : 0,
                 'amount' => 0,
-                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : (isset($r['address']) ? $r['address'] : ''),
-                'completed_at' => (isset($r['completed_at']) && !empty($r['completed_at'])) ? date('M j, Y g:i A', strtotime($r['completed_at'])) : ((isset($r['updated_at']) && !empty($r['updated_at'])) ? date('M j, Y g:i A', strtotime($r['updated_at'])) : '')
+                'address' => isset($r['pickup_address']) ? $r['pickup_address'] : '',
+                'completed_at' => isset($r['updated_at']) && !empty($r['updated_at']) ? date('M j, Y g:i A', strtotime($r['updated_at'])) : ''
             ];
         }, $history),
         'earnings' => [

@@ -82,13 +82,21 @@ header("Expires: 0");
 
                 <!-- Personal Details Card -->
                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                        </svg>
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Personal Details</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                            </svg>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Personal Details</h2>
+                        </div>
+                        <button id="editProfileBtn" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Edit Profile
+                        </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div id="profileView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <div class="space-y-1">
                             <p class="text-gray-500 dark:text-slate-400 text-xs">Email Address</p>
                             <p id="collectorEmail" class="font-medium text-gray-900 dark:text-white">—</p>
@@ -119,6 +127,44 @@ header("Expires: 0");
                             <p id="collectorJoinedDate" class="font-medium text-gray-900 dark:text-white">—</p>
                         </div>
                     </div>
+                    
+                    <!-- Edit Form (Hidden by default) -->
+                    <form id="profileEditForm" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Full Name</label>
+                                <input type="text" id="editName" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Email Address</label>
+                                <input type="email" id="editEmail" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Phone Number</label>
+                                <input type="tel" id="editPhone" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">ID Number</label>
+                                <input type="text" id="editIdNumber" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Date of Birth</label>
+                                <input type="date" id="editDateOfBirth" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Home Address</label>
+                                <textarea id="editAddress" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button type="button" id="cancelEditBtn" class="px-4 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <!-- Statistics Grid -->
@@ -184,14 +230,23 @@ header("Expires: 0");
                 <!-- Vehicle & Service Areas -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <!-- Vehicle Info -->
+                    <!-- Vehicle Information -->
                     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <div class="flex items-center gap-2 mb-4">
-                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
-                            </svg>
-                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Vehicle Information</h2>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                                </svg>
+                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Vehicle Information</h2>
+                            </div>
+                            <button id="editVehicleBtn" class="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Edit
+                            </button>
                         </div>
-                        <div class="space-y-3 text-sm">
+                        <div id="vehicleView" class="space-y-3 text-sm">
                             <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-slate-700">
                                 <span class="text-gray-600 dark:text-slate-400">Vehicle Type</span>
                                 <span id="vehicleType" class="font-medium text-gray-900 dark:text-white"></span>
@@ -207,9 +262,120 @@ header("Expires: 0");
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Vehicle Edit Form -->
+                        <form id="vehicleEditForm" class="hidden space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Vehicle Type</label>
+                                <select id="editVehicleType" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                                    <option value="">Select vehicle type</option>
+                                    <option value="truck">Truck</option>
+                                    <option value="pickup">Pickup</option>
+                                    <option value="tuktuk">Tuk-Tuk</option>
+                                    <option value="motorcycle">Motorcycle</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Vehicle Registration</label>
+                                <input type="text" id="editVehicleReg" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white uppercase" placeholder="KXX 123X">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-2">Materials Collected</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="plastic" class="material-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Plastic</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="paper" class="material-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Paper</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="metal" class="material-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Metal</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="glass" class="material-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Glass</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="electronics" class="material-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Electronics</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 justify-end">
+                                <button type="button" id="cancelVehicleBtn" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                                    Save
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                     <!-- Service Areas -->
+                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Service Areas</h2>
+                            </div>
+                            <button id="editAreasBtn" class="flex items-center gap-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Edit
+                            </button>
+                        </div>
+                        <div id="areasView" class="grid grid-cols-2 gap-2 text-sm">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                        
+                        <!-- Areas Edit Form -->
+                        <form id="areasEditForm" class="hidden space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-2">Service Areas (Select all that apply)</label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Kiambu Town" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Kiambu Town</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Thika" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Thika</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Ruiru" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Ruiru</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Juja" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Juja</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Githunguri" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Githunguri</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" value="Limuru" class="area-checkbox rounded border-gray-300 dark:border-slate-600">
+                                        <span class="text-sm">Limuru</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 justify-end">
+                                <button type="button" id="cancelAreasBtn" class="px-3 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                                    Save
+                                </button>
+                            </div>
+                        </form>                    <!-- Service Areas -->
                     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
                         <div class="flex items-center gap-2 mb-4">
                             <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,6 +443,15 @@ header("Expires: 0");
     </div>
 
     <script>
+        // Store current profile data for editing
+        let currentProfileData = null;
+        let currentVehicleData = null;
+        let currentAreasData = null;
+        
+        // Store chart instances
+        let earningsChart = null;
+        let materialsChart = null;
+
         // Load profile data
         async function loadProfileData() {
             try {
@@ -294,6 +469,9 @@ header("Expires: 0");
                 if (data.status !== 'success') {
                     throw new Error(data.message || 'Failed to load profile');
                 }
+                currentProfileData = data.profile; // Store for editing
+                currentVehicleData = data.vehicle; // Store vehicle data
+                currentAreasData = data.areas; // Store areas data
                 updateProfileHeader(data.profile);
                 updateStats(data.stats);
                 updateVehicleInfo(data.vehicle);
@@ -360,7 +538,7 @@ header("Expires: 0");
 
         // Update service areas
         function updateServiceAreas(areas) {
-            const areasList = document.getElementById('areasList');
+            const areasList = document.getElementById('areasView');
             areasList.innerHTML = '';
             
             areas.forEach(area => {
@@ -408,9 +586,17 @@ header("Expires: 0");
 
         // Update charts
         function updateCharts(analytics) {
+            // Destroy existing charts if they exist
+            if (earningsChart) {
+                earningsChart.destroy();
+            }
+            if (materialsChart) {
+                materialsChart.destroy();
+            }
+            
             // Earnings trend chart
             const earningsCtx = document.getElementById('earningsChart').getContext('2d');
-            new Chart(earningsCtx, {
+            earningsChart = new Chart(earningsCtx, {
                 type: 'line',
                 data: {
                     labels: analytics.earnings.labels,
@@ -429,7 +615,7 @@ header("Expires: 0");
 
             // Materials distribution chart
             const materialsCtx = document.getElementById('materialsChart').getContext('2d');
-            new Chart(materialsCtx, {
+            materialsChart = new Chart(materialsCtx, {
                 type: 'doughnut',
                 data: {
                     labels: analytics.materials.labels,
@@ -468,6 +654,219 @@ header("Expires: 0");
             }
         });
 
+        // Profile edit functionality
+        function toggleEditMode(show) {
+            const profileView = document.getElementById('profileView');
+            const profileEditForm = document.getElementById('profileEditForm');
+            const editBtn = document.getElementById('editProfileBtn');
+            
+            if (show) {
+                profileView.classList.add('hidden');
+                profileEditForm.classList.remove('hidden');
+                editBtn.classList.add('hidden');
+                populateEditForm();
+            } else {
+                profileView.classList.remove('hidden');
+                profileEditForm.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+            }
+        }
+
+        function populateEditForm() {
+            if (!currentProfileData) return;
+            
+            document.getElementById('editName').value = currentProfileData.name || '';
+            document.getElementById('editEmail').value = currentProfileData.email || '';
+            document.getElementById('editPhone').value = currentProfileData.phone || '';
+            document.getElementById('editIdNumber').value = currentProfileData.id_number || '';
+            document.getElementById('editDateOfBirth').value = currentProfileData.date_of_birth || '';
+            document.getElementById('editAddress').value = currentProfileData.home_address || '';
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                id_number: document.getElementById('editIdNumber').value,
+                date_of_birth: document.getElementById('editDateOfBirth').value,
+                address: document.getElementById('editAddress').value
+            };
+
+            try {
+                const response = await fetch('/Scrap/api/collectors/update_profile.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('Profile updated successfully!', 'success');
+                    await loadProfileData();
+                    toggleEditMode(false);
+                } else {
+                    throw new Error(data.message || 'Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showToast(error.message || 'Failed to update profile', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Vehicle edit functionality
+        function toggleVehicleEdit(show) {
+            const vehicleView = document.getElementById('vehicleView');
+            const vehicleEditForm = document.getElementById('vehicleEditForm');
+            const editBtn = document.getElementById('editVehicleBtn');
+            
+            if (show) {
+                vehicleView.classList.add('hidden');
+                vehicleEditForm.classList.remove('hidden');
+                editBtn.classList.add('hidden');
+                populateVehicleForm();
+            } else {
+                vehicleView.classList.remove('hidden');
+                vehicleEditForm.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+            }
+        }
+
+        function populateVehicleForm() {
+            if (!currentVehicleData) return;
+            
+            document.getElementById('editVehicleType').value = currentVehicleData.type || '';
+            document.getElementById('editVehicleReg').value = currentVehicleData.registration || '';
+            
+            // Populate materials checkboxes
+            const materials = currentVehicleData.materials || [];
+            
+            document.querySelectorAll('.material-checkbox').forEach(cb => {
+                // Check if the material exists in the array (case-insensitive)
+                cb.checked = materials.some(m => m.toLowerCase() === cb.value.toLowerCase());
+            });
+        }
+
+        async function handleVehicleUpdate(e) {
+            e.preventDefault();
+            
+            const selectedMaterials = Array.from(document.querySelectorAll('.material-checkbox:checked'))
+                .map(cb => cb.value);
+            
+            const formData = {
+                vehicle_type: document.getElementById('editVehicleType').value,
+                vehicle_registration: document.getElementById('editVehicleReg').value,
+                materials: selectedMaterials
+            };
+
+            try {
+                const response = await fetch('/Scrap/api/collectors/update_profile.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('Vehicle info updated successfully!', 'success');
+                    await loadProfileData();
+                    toggleVehicleEdit(false);
+                } else {
+                    throw new Error(data.message || 'Failed to update vehicle info');
+                }
+            } catch (error) {
+                console.error('Vehicle update error:', error);
+                showToast(error.message || 'Failed to update vehicle info', 'error');
+            }
+        }
+
+        // Service areas edit functionality
+        function toggleAreasEdit(show) {
+            const areasView = document.getElementById('areasView');
+            const areasEditForm = document.getElementById('areasEditForm');
+            const editBtn = document.getElementById('editAreasBtn');
+            
+            if (show) {
+                areasView.classList.add('hidden');
+                areasEditForm.classList.remove('hidden');
+                editBtn.classList.add('hidden');
+                populateAreasForm();
+            } else {
+                areasView.classList.remove('hidden');
+                areasEditForm.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+            }
+        }
+
+        function populateAreasForm() {
+            if (!currentAreasData) return;
+            
+            // Populate service areas checkboxes
+            const areas = Array.isArray(currentAreasData) ? currentAreasData : [];
+            
+            document.querySelectorAll('.area-checkbox').forEach(cb => {
+                cb.checked = areas.includes(cb.value);
+            });
+        }
+
+        async function handleAreasUpdate(e) {
+            e.preventDefault();
+            
+            const selectedAreas = Array.from(document.querySelectorAll('.area-checkbox:checked'))
+                .map(cb => cb.value);
+            
+            const formData = {
+                service_areas: selectedAreas
+            };
+
+            try {
+                const response = await fetch('/Scrap/api/collectors/update_profile.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('Service areas updated successfully!', 'success');
+                    await loadProfileData();
+                    toggleAreasEdit(false);
+                } else {
+                    throw new Error(data.message || 'Failed to update service areas');
+                }
+            } catch (error) {
+                console.error('Areas update error:', error);
+                showToast(error.message || 'Failed to update service areas', 'error');
+            }
+        }
+
         // Logout function
         async function logout() {
             try {
@@ -476,7 +875,7 @@ header("Expires: 0");
                     credentials: 'include' 
                 });
                 sessionStorage.clear();
-                window.location.href = '/Scrap/views/auth/login.php';
+                window.location.href = '/Scrap/views/auth/login.php?logout=1';
             } catch (error) {
                 console.error('Logout failed:', error);
             }
@@ -485,6 +884,57 @@ header("Expires: 0");
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             loadProfileData();
+            
+            // Add event listeners for profile editing
+            const editBtn = document.getElementById('editProfileBtn');
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            const editForm = document.getElementById('profileEditForm');
+            
+            if (editBtn) {
+                editBtn.addEventListener('click', () => toggleEditMode(true));
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => toggleEditMode(false));
+            }
+            
+            if (editForm) {
+                editForm.addEventListener('submit', handleProfileUpdate);
+            }
+
+            // Vehicle edit listeners
+            const editVehicleBtn = document.getElementById('editVehicleBtn');
+            const cancelVehicleBtn = document.getElementById('cancelVehicleBtn');
+            const vehicleForm = document.getElementById('vehicleEditForm');
+            
+            if (editVehicleBtn) {
+                editVehicleBtn.addEventListener('click', () => toggleVehicleEdit(true));
+            }
+            
+            if (cancelVehicleBtn) {
+                cancelVehicleBtn.addEventListener('click', () => toggleVehicleEdit(false));
+            }
+            
+            if (vehicleForm) {
+                vehicleForm.addEventListener('submit', handleVehicleUpdate);
+            }
+
+            // Service areas edit listeners
+            const editAreasBtn = document.getElementById('editAreasBtn');
+            const cancelAreasBtn = document.getElementById('cancelAreasBtn');
+            const areasForm = document.getElementById('areasEditForm');
+            
+            if (editAreasBtn) {
+                editAreasBtn.addEventListener('click', () => toggleAreasEdit(true));
+            }
+            
+            if (cancelAreasBtn) {
+                cancelAreasBtn.addEventListener('click', () => toggleAreasEdit(false));
+            }
+            
+            if (areasForm) {
+                areasForm.addEventListener('submit', handleAreasUpdate);
+            }
         });
     </script>
 </body>

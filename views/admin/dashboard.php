@@ -286,6 +286,10 @@ requireAdmin();
             window.location.href = '/Scrap/views/auth/login.php';
         }
 
+        // Store chart instances globally
+        let trendChartInstance = null;
+        let materialsChartInstance = null;
+
         // Load admin data
         async function loadAdminData() {
             try {
@@ -312,11 +316,16 @@ requireAdmin();
                     document.getElementById('pendingApprovals').textContent = data.stats.pending_approvals;
                     document.getElementById('totalRewards').textContent = 'KES ' + data.stats.total_rewards;
                     
-                    // Update admin name
-                    document.getElementById('adminName').textContent = data.admin.name;
+                    // Update admin name if element exists
+                    const adminNameEl = document.getElementById('adminName');
+                    if (adminNameEl && data.admin && data.admin.name) {
+                        adminNameEl.textContent = data.admin.name;
+                    }
                     
-                    // Update system status
-                    updateSystemStatus(data.system);
+                    // Update system status if data exists
+                    if (data.system) {
+                        updateSystemStatus(data.system);
+                    }
                     
                     // Update charts
                     updateTrendChart(data.trends);
@@ -374,8 +383,13 @@ requireAdmin();
 
         // Update collection trend chart
         function updateTrendChart(trends) {
+            // Destroy existing chart if it exists
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+            
             const ctx = document.getElementById('trendChart').getContext('2d');
-            new Chart(ctx, {
+            trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: trends.labels,
@@ -420,20 +434,35 @@ requireAdmin();
 
         // Update materials distribution chart
         function updateMaterialsChart(materials) {
+            // Destroy existing chart if it exists
+            if (materialsChartInstance) {
+                materialsChartInstance.destroy();
+            }
+            
             const ctx = document.getElementById('materialsChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // Use dynamic labels and values from API
+            const labels = materials.labels || ['No Data'];
+            const values = materials.values || [0];
+            
+            // Generate colors dynamically
+            const colors = [
+                'rgb(59, 130, 246)',   // Blue
+                'rgb(234, 179, 8)',    // Yellow
+                'rgb(75, 85, 99)',     // Gray
+                'rgb(34, 197, 94)',    // Green
+                'rgb(168, 85, 247)',   // Purple
+                'rgb(239, 68, 68)',    // Red
+                'rgb(236, 72, 153)'    // Pink
+            ];
+            
+            materialsChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Plastic', 'Paper', 'Metal', 'Glass', 'Electronics'],
+                    labels: labels,
                     datasets: [{
-                        data: materials.percentages,
-                        backgroundColor: [
-                            'rgb(59, 130, 246)',
-                            'rgb(234, 179, 8)',
-                            'rgb(75, 85, 99)',
-                            'rgb(34, 197, 94)',
-                            'rgb(168, 85, 247)'
-                        ],
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
                         borderWidth: 2,
                         borderColor: '#fff'
                     }]
@@ -443,19 +472,31 @@ requireAdmin();
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'bottom'
                         }
                     },
                     cutout: '65%'
                 }
             });
             
-            // Update percentage labels
-            document.getElementById('plasticPercentage').textContent = materials.percentages[0] + '%';
-            document.getElementById('paperPercentage').textContent = materials.percentages[1] + '%';
-            document.getElementById('metalPercentage').textContent = materials.percentages[2] + '%';
-            document.getElementById('glassPercentage').textContent = materials.percentages[3] + '%';
-            document.getElementById('electronicsPercentage').textContent = materials.percentages[4] + '%';
+            // Update percentage labels if they exist
+            const total = values.reduce((a, b) => a + b, 0);
+            if (total > 0) {
+                const percentages = values.map(v => ((v / total) * 100).toFixed(1));
+                
+                const plasticEl = document.getElementById('plasticPercentage');
+                const paperEl = document.getElementById('paperPercentage');
+                const metalEl = document.getElementById('metalPercentage');
+                const glassEl = document.getElementById('glassPercentage');
+                const electronicsEl = document.getElementById('electronicsPercentage');
+                
+                if (plasticEl) plasticEl.textContent = (percentages[0] || 0) + '%';
+                if (paperEl) paperEl.textContent = (percentages[1] || 0) + '%';
+                if (metalEl) metalEl.textContent = (percentages[2] || 0) + '%';
+                if (glassEl) glassEl.textContent = (percentages[3] || 0) + '%';
+                if (electronicsEl) electronicsEl.textContent = (percentages[4] || 0) + '%';
+            }
         }
 
         // Update pending reviews list
@@ -521,7 +562,7 @@ requireAdmin();
             })
                 .then(() => {
                     sessionStorage.clear();
-                    window.location.href = '/Scrap/views/auth/login.php';
+                    window.location.href = '/Scrap/views/auth/login.php?logout=1';
                 })
                 .catch(error => console.error('Logout failed:', error));
         }

@@ -1,4 +1,13 @@
 <?php
+// Start session and check authentication
+require_once '../../config.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'collector') {
+    header('Location: /Scrap/views/auth/login.php');
+    exit();
+}
+
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -82,13 +91,21 @@ header("Expires: 0");
 
                 <!-- Personal Details Card -->
                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                        </svg>
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Personal Details</h2>
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
+                            </svg>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Personal Details</h2>
+                        </div>
+                        <button id="editProfileBtn" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Edit Profile
+                        </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div id="profileView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <div class="space-y-1">
                             <p class="text-gray-500 dark:text-slate-400 text-xs">Email Address</p>
                             <p id="collectorEmail" class="font-medium text-gray-900 dark:text-white">—</p>
@@ -119,6 +136,48 @@ header("Expires: 0");
                             <p id="collectorJoinedDate" class="font-medium text-gray-900 dark:text-white">—</p>
                         </div>
                     </div>
+                    
+                    <!-- Edit Form (Hidden by default) -->
+                    <form id="profileEditForm" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Full Name</label>
+                                <input type="text" id="editName" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Email Address</label>
+                                <input type="email" id="editEmail" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Phone Number</label>
+                                <input type="tel" id="editPhone" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">ID Number</label>
+                                <input type="text" id="editIdNumber" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Date of Birth</label>
+                                <input type="date" id="editDateOfBirth" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Vehicle Registration</label>
+                                <input type="text" id="editVehicleReg" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white uppercase">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs text-gray-500 dark:text-slate-400 mb-1">Home Address</label>
+                                <textarea id="editAddress" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button type="button" id="cancelEditBtn" class="px-4 py-2 text-sm border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg">
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <!-- Statistics Grid -->
@@ -277,6 +336,9 @@ header("Expires: 0");
     </div>
 
     <script>
+        // Store profile data globally
+        let currentProfileData = null;
+
         // Load profile data
         async function loadProfileData() {
             try {
@@ -294,6 +356,7 @@ header("Expires: 0");
                 if (data.status !== 'success') {
                     throw new Error(data.message || 'Failed to load profile');
                 }
+                currentProfileData = data.profile; // Store for editing
                 updateProfileHeader(data.profile);
                 updateStats(data.stats);
                 updateVehicleInfo(data.vehicle);
@@ -479,9 +542,117 @@ header("Expires: 0");
             }
         }
 
+        // Profile edit functionality
+        function toggleEditMode(show) {
+            const profileView = document.getElementById('profileView');
+            const profileEditForm = document.getElementById('profileEditForm');
+            const editBtn = document.getElementById('editProfileBtn');
+            
+            if (show) {
+                profileView.classList.add('hidden');
+                profileEditForm.classList.remove('hidden');
+                editBtn.classList.add('hidden');
+                populateEditForm();
+            } else {
+                profileView.classList.remove('hidden');
+                profileEditForm.classList.add('hidden');
+                editBtn.classList.remove('hidden');
+            }
+        }
+
+        function populateEditForm() {
+            if (!currentProfileData) return;
+            
+            document.getElementById('editName').value = currentProfileData.name || '';
+            document.getElementById('editEmail').value = currentProfileData.email || '';
+            document.getElementById('editPhone').value = currentProfileData.phone || '';
+            document.getElementById('editIdNumber').value = currentProfileData.id_number || '';
+            document.getElementById('editDateOfBirth').value = currentProfileData.date_of_birth || '';
+            document.getElementById('editVehicleReg').value = currentProfileData.vehicle_registration || '';
+            document.getElementById('editAddress').value = currentProfileData.home_address || '';
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            
+            const formData = {
+                name: document.getElementById('editName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                id_number: document.getElementById('editIdNumber').value,
+                date_of_birth: document.getElementById('editDateOfBirth').value,
+                vehicle_registration: document.getElementById('editVehicleReg').value,
+                address: document.getElementById('editAddress').value
+            };
+
+            try {
+                const response = await fetch('/Scrap/api/collectors/update_profile.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast('Profile updated successfully!', 'success');
+                    await loadProfileData();
+                    toggleEditMode(false);
+                } else {
+                    throw new Error(data.message || 'Failed to update profile');
+                }
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showToast(error.message || 'Failed to update profile', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white z-50 ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded');
+            console.log('Edit button exists:', document.getElementById('editProfileBtn'));
+            console.log('Profile view exists:', document.getElementById('profileView'));
+            console.log('Edit form exists:', document.getElementById('profileEditForm'));
+            
             loadProfileData();
+            
+            // Add event listeners for profile editing
+            const editBtn = document.getElementById('editProfileBtn');
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            const editForm = document.getElementById('profileEditForm');
+            
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    console.log('Edit button clicked');
+                    toggleEditMode(true);
+                });
+            } else {
+                console.error('Edit button not found!');
+            }
+            
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => toggleEditMode(false));
+            }
+            
+            if (editForm) {
+                editForm.addEventListener('submit', handleProfileUpdate);
+            }
         });
     </script>
 </body>

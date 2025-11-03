@@ -6,39 +6,60 @@ session_start();
 require_once __DIR__ . '/../../config.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+    http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
     exit;
 }
 
 try {
+    // Get database connection
+    $conn = getDBConnection();
+    
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        // Get all rewards
-        $stmt = $conn->prepare("SELECT * FROM rewards ORDER BY created_at DESC");
+        // Get all reward transactions (points earned/used by users)
+        $stmt = $conn->prepare("
+            SELECT 
+                r.*,
+                u.name as user_name,
+                u.email as user_email
+            FROM rewards r
+            LEFT JOIN users u ON r.user_id = u.id
+            ORDER BY r.created_at DESC
+        ");
         $stmt->execute();
         $rewards = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Get recent redemptions
-        $redemptionsStmt = $conn->prepare("
+        // Get user points summary
+        $userPointsStmt = $conn->prepare("
             SELECT 
-                rr.*, r.title as reward_title, r.points,
-                u.name as user_name
-            FROM reward_redemptions rr
-            LEFT JOIN rewards r ON rr.reward_id = r.id
-            LEFT JOIN users u ON rr.user_id = u.id
-            ORDER BY rr.redeemed_at DESC
-            LIMIT 20
+                u.id as user_id,
+                u.name as user_name,
+                u.email as user_email,
+                COALESCE(SUM(CASE WHEN r.redeemed = 0 THEN r.points ELSE 0 END), 0) as available_points,
+                COALESCE(SUM(CASE WHEN r.redeemed = 1 THEN r.points ELSE 0 END), 0) as redeemed_points,
+                COALESCE(SUM(r.points), 0) as total_points
+            FROM users u
+            LEFT JOIN rewards r ON u.id = r.user_id
+            WHERE u.role = 'citizen'
+            GROUP BY u.id, u.name, u.email
+            HAVING total_points > 0
+            ORDER BY available_points DESC
+            LIMIT 50
         ");
-        $redemptionsStmt->execute();
-        $redemptions = $redemptionsStmt->fetchAll(PDO::FETCH_ASSOC);
+        $userPointsStmt->execute();
+        $userPoints = $userPointsStmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Get statistics
         $statsStmt = $conn->prepare("
             SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                (SELECT COUNT(*) FROM reward_redemptions) as total_redemptions,
-                (SELECT SUM(points) FROM reward_redemptions rr 
-                 JOIN rewards r ON rr.reward_id = r.id) as total_points_used
+                COUNT(DISTINCT user_id) as total_users,
+                COUNT(*) as total_transactions,
+                COALESCE(SUM(CASE WHEN redeemed = 0 THEN points ELSE 0 END), 0) as total_available_points,
+                COALESCE(SUM(CASE WHEN redeemed = 1 THEN points ELSE 0 END), 0) as total_redeemed_points,
+                COALESCE(SUM(points), 0) as total_points_issued,
+                COUNT(CASE WHEN activity_type = 'collection' THEN 1 END) as collection_rewards,
+                COUNT(CASE WHEN activity_type = 'referral' THEN 1 END) as referral_rewards,
+                COUNT(CASE WHEN activity_type = 'bonus' THEN 1 END) as bonus_rewards
             FROM rewards
         ");
         $statsStmt->execute();
@@ -47,57 +68,37 @@ try {
         echo json_encode([
             'status' => 'success',
             'rewards' => $rewards,
-            'redemptions' => $redemptions,
+            'userPoints' => $userPoints,
             'stats' => $stats
         ]);
     }
     
     elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Award bonus points to a user
         $input = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($input['title']) || !isset($input['points'])) {
-            echo json_encode(['status' => 'error', 'message' => 'Missing required fields']);
+        if (!isset($input['user_id']) || !isset($input['points'])) {
+            echo json_encode(['status' => 'error', 'message' => 'Missing required fields (user_id, points)']);
             exit;
         }
         
-        if (!empty($input['id'])) {
-            // Update
-            $stmt = $conn->prepare("
-                UPDATE rewards 
-                SET title = ?, description = ?, points = ?, stock = ?, image = ?, status = ?
-                WHERE id = ?
-            ");
-            $stmt->execute([
-                $input['title'],
-                $input['description'],
-                $input['points'],
-                $input['stock'] ?: null,
-                $input['image'] ?: null,
-                $input['status'] ?: 'active',
-                $input['id']
-            ]);
-            $message = 'Reward updated successfully';
-        } else {
-            // Create
-            $stmt = $conn->prepare("
-                INSERT INTO rewards (title, description, points, stock, image, status)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([
-                $input['title'],
-                $input['description'],
-                $input['points'],
-                $input['stock'] ?: null,
-                $input['image'] ?: null,
-                $input['status'] ?: 'active'
-            ]);
-            $message = 'Reward created successfully';
-        }
+        $stmt = $conn->prepare("
+            INSERT INTO rewards (user_id, points, activity_type, reference_id, redeemed)
+            VALUES (?, ?, 'bonus', NULL, 0)
+        ");
+        $stmt->execute([
+            $input['user_id'],
+            $input['points']
+        ]);
         
-        echo json_encode(['status' => 'success', 'message' => $message]);
+        echo json_encode([
+            'status' => 'success', 
+            'message' => 'Bonus points awarded successfully'
+        ]);
     }
     
     elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        // Delete a reward transaction
         $input = json_decode(file_get_contents('php://input'), true);
         
         if (!isset($input['id'])) {
@@ -108,12 +109,23 @@ try {
         $stmt = $conn->prepare("DELETE FROM rewards WHERE id = ?");
         $stmt->execute([$input['id']]);
         
-        echo json_encode(['status' => 'success', 'message' => 'Reward deleted successfully']);
+        echo json_encode(['status' => 'success', 'message' => 'Reward transaction deleted successfully']);
     }
     
 } catch (PDOException $e) {
+    error_log("Admin Rewards API Error: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+    ]);
+} catch (Exception $e) {
+    error_log("Admin Rewards API Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Server error: ' . $e->getMessage()
     ]);
 }
+?>

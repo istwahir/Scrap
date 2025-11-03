@@ -65,6 +65,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
         // Year display
         document.getElementById('year').textContent = new Date().getFullYear();
         
+        // Toast notification function
+        function showStatusToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                info: 'bg-blue-600'
+            };
+            toast.className = `fixed top-4 right-4 ${colors[type] || colors.info} text-white px-4 py-3 rounded-lg shadow-lg text-sm z-50 transition-opacity duration-300`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
         // Theme toggle
         const themeToggle = document.getElementById('themeToggle');
         const htmlElement = document.documentElement;
@@ -87,41 +105,269 @@ $current_page = basename($_SERVER['PHP_SELF']);
             }
         });
         
-        // Status change handler
+        // Load initial status from server
         const statusSelect = document.getElementById('statusSelect');
-        statusSelect.addEventListener('change', async function() {
+        
+        // Function to load status from database
+        async function loadStatusFromDB() {
             try {
-                const response = await fetch('/Scrap/api/collectors/update_location.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ status: this.value })
+                const response = await fetch('/Scrap/api/collectors/dashboard.php', {
+                    credentials: 'include'
                 });
-                if (!response.ok) {
-                    throw new Error('Failed to update status');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success' && data.stats && data.stats.active_status) {
+                        const dbStatus = data.stats.active_status;
+                        statusSelect.value = dbStatus;
+                        sessionStorage.setItem('collectorStatus', dbStatus);
+                        localStorage.setItem('collectorStatus', dbStatus);
+                        
+                        // Update location status indicator
+                        const locationStatusEl = document.getElementById('locationStatus');
+                        if (locationStatusEl) {
+                            if (dbStatus === 'offline') {
+                                locationStatusEl.textContent = 'Inactive';
+                                locationStatusEl.className = 'text-red-600 dark:text-red-400';
+                            } else {
+                                locationStatusEl.textContent = 'Active';
+                                locationStatusEl.className = 'text-green-600 dark:text-green-400';
+                            }
+                        }
+                        
+                        console.log('Loaded status from DB:', dbStatus);
+                        return dbStatus;
+                    }
                 }
             } catch (error) {
-                console.error('Error updating status:', error);
-                alert('Failed to update status. Please try again.');
+                console.error('Error loading status from DB:', error);
+            }
+            
+            // Fallback to localStorage, then sessionStorage, or default
+            const fallbackStatus = localStorage.getItem('collectorStatus') 
+                || sessionStorage.getItem('collectorStatus') 
+                || 'online';
+            statusSelect.value = fallbackStatus;
+            
+            // Update location status indicator for fallback
+            const locationStatusEl = document.getElementById('locationStatus');
+            if (locationStatusEl) {
+                if (fallbackStatus === 'offline') {
+                    locationStatusEl.textContent = 'Inactive';
+                    locationStatusEl.className = 'text-red-600 dark:text-red-400';
+                } else {
+                    locationStatusEl.textContent = 'Active';
+                    locationStatusEl.className = 'text-green-600 dark:text-green-400';
+                }
+            }
+            
+            return fallbackStatus;
+        }
+        
+        // Load status on page load
+        loadStatusFromDB();
+        
+        // Status change handler
+        statusSelect.addEventListener('change', async function() {
+            const selectedStatus = statusSelect.value;
+            const previousStatus = sessionStorage.getItem('collectorStatus') || 'online';
+            
+            // Show loading state
+            statusSelect.disabled = true;
+            statusSelect.style.opacity = '0.6';
+            
+            // Function to dispatch status change event
+            const dispatchStatusChange = (success) => {
+                // Re-enable the select
+                statusSelect.disabled = false;
+                statusSelect.style.opacity = '1';
+                
+                if (success) {
+                    // Update location status indicator immediately
+                    const locationStatusEl = document.getElementById('locationStatus');
+                    if (locationStatusEl) {
+                        if (selectedStatus === 'offline') {
+                            locationStatusEl.textContent = 'Inactive';
+                            locationStatusEl.className = 'text-red-600 dark:text-red-400';
+                        } else {
+                            locationStatusEl.textContent = 'Active';
+                            locationStatusEl.className = 'text-green-600 dark:text-green-400';
+                        }
+                    }
+                    
+                    // Dispatch custom event for dashboard to listen
+                    window.dispatchEvent(new CustomEvent('collectorStatusChanged', {
+                        detail: { status: selectedStatus }
+                    }));
+                    
+                    // Update both sessionStorage and localStorage for persistence
+                    sessionStorage.setItem('collectorStatus', selectedStatus);
+                    localStorage.setItem('collectorStatus', selectedStatus);
+                    
+                    // Show success feedback
+                    showStatusToast('Status updated successfully', 'success');
+                } else {
+                    // Revert to previous status on failure
+                    statusSelect.value = previousStatus;
+                    showStatusToast('Failed to update status', 'error');
+                }
+            };
+            
+            // Get current location first if available
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        try {
+                            const response = await fetch('/Scrap/api/collectors/update_location.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ 
+                                    status: selectedStatus,
+                                    latitude: position.coords.latitude,
+                                    longitude: position.coords.longitude
+                                })
+                            });
+                            if (!response.ok) {
+                                throw new Error('Failed to update status');
+                            }
+                            dispatchStatusChange(true);
+                        } catch (error) {
+                            console.error('Error updating status:', error);
+                            dispatchStatusChange(false);
+                        }
+                    },
+                    async (error) => {
+                        console.warn('Could not get location, updating status only:', error.message);
+                        // Status update without location
+                        try {
+                            const response = await fetch('/Scrap/api/collectors/update_location.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ status: selectedStatus })
+                            });
+                            if (!response.ok) {
+                                throw new Error('Failed to update status');
+                            }
+                            dispatchStatusChange(true);
+                        } catch (error) {
+                            console.error('Error updating status without location:', error);
+                            dispatchStatusChange(false);
+                        }
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 15000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                // No geolocation support - update status only
+                try {
+                    const response = await fetch('/Scrap/api/collectors/update_location.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ status: selectedStatus })
+                    });
+                    if (!response.ok) {
+                        throw new Error('Failed to update status');
+                    }
+                    dispatchStatusChange(true);
+                } catch (error) {
+                    console.error('Error updating status:', error);
+                    dispatchStatusChange(false);
+                }
             }
         });
         
-        // Logout handler
-        document.getElementById('logoutBtn').addEventListener('click', async function() {
-            if (!confirm('Are you sure you want to logout?')) return;
+        // Logout confirmation modal functions
+        function showLogoutModal() {
+            const modal = document.createElement('div');
+            modal.id = 'logoutModal';
+            modal.className = 'fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm';
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-6 max-w-sm mx-4 transform transition-all">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Confirm Logout</h3>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-slate-300 mb-6">Are you sure you want to logout?</p>
+                    <div class="flex gap-3 justify-end">
+                        <button id="cancelLogout" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-medium">
+                            Cancel
+                        </button>
+                        <button id="confirmLogout" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors font-medium">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
             
+            // Add click handlers
+            document.getElementById('cancelLogout').addEventListener('click', () => {
+                modal.remove();
+            });
+            
+            document.getElementById('confirmLogout').addEventListener('click', async () => {
+                modal.remove();
+                await performLogout();
+            });
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+            
+            // Close on Escape key
+            const escapeHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.remove();
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            };
+            document.addEventListener('keydown', escapeHandler);
+        }
+        
+        async function performLogout() {
             try {
+                // Show loading toast
+                showStatusToast('Logging out...', 'info');
+                
                 const response = await fetch('/Scrap/api/logout.php', {
                     method: 'POST',
                     credentials: 'include'
                 });
+                
                 if (response.ok) {
-                    window.location.href = '/Scrap/login.php';
+                    // Clear stored data
+                    sessionStorage.clear();
+                    localStorage.removeItem('collectorStatus');
+                    
+                    // Redirect to login
+                    window.location.href = '/Scrap/views/auth/login.php';
+                } else {
+                    throw new Error('Logout request failed');
                 }
             } catch (error) {
                 console.error('Logout error:', error);
-                alert('Failed to logout. Please try again.');
+                showStatusToast('Failed to logout. Please try again.', 'error');
             }
+        }
+        
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            showLogoutModal();
         });
         
         // Location tracking
@@ -129,7 +375,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             navigator.geolocation.watchPosition(
                 async (position) => {
                     try {
-                        await fetch('/Scrap/api/collectors/update_location.php', {
+                        const response = await fetch('/Scrap/api/collectors/update_location.php', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
@@ -138,18 +384,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 longitude: position.coords.longitude
                             })
                         });
-                        document.getElementById('locationStatus').textContent = 'Active';
-                        document.getElementById('locationStatus').className = 'text-green-600 dark:text-green-400';
+                        if (response.ok) {
+                            document.getElementById('locationStatus').textContent = 'Active';
+                            document.getElementById('locationStatus').className = 'text-green-600 dark:text-green-400';
+                        }
                     } catch (error) {
-                        console.error('Error updating location:', error);
+                        // Silently log location update errors
+                        console.debug('Location update skipped:', error.message);
                     }
                 },
                 (error) => {
-                    console.error('Geolocation error:', error);
+                    console.debug('Geolocation error:', error.message);
                     document.getElementById('locationStatus').textContent = 'Inactive';
                     document.getElementById('locationStatus').className = 'text-red-600 dark:text-red-400';
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
             );
         }
     });

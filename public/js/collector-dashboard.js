@@ -19,6 +19,7 @@ const state = {
   activeRouteLayer: null,
   tracker: null,
   map: null,
+  myLocationMarker: null,
   loading: false
 };
 
@@ -103,11 +104,13 @@ async function loadDashboardData({ silent=false } = {}) {
   if (state.loading) return;
   state.loading = true;
   try {
-    let res = await fetch('/Scrap/api/collectors/dashboard.php');
+    let res = await fetch('/Scrap/api/collectors/dashboard.php', {
+      credentials: 'same-origin'
+    });
     // If the /Scrap path returns server error or not found, try a fallback without /Scrap
     if (!res.ok) {
       console.warn('Primary dashboard fetch failed', res.status, 'trying fallback /api/collectors/dashboard.php');
-      try { res = await fetch('/api/collectors/dashboard.php'); } catch (e) { /* ignore */ }
+      try { res = await fetch('/api/collectors/dashboard.php', { credentials: 'same-origin' }); } catch (e) { /* ignore */ }
     }
     let json;
     try { json = await res.json(); }
@@ -150,6 +153,52 @@ function renderStats(stats) {
   els.todayEarnings.textContent = 'KES ' + stats.today_earnings;
   els.rating.textContent = Number(stats.rating).toFixed(1);
   els.totalWeight.textContent = stats.total_weight + ' kg';
+  
+  // Sync status from server if available
+  if (stats.active_status) {
+    const serverStatus = stats.active_status;
+    const currentStatus = sessionStorage.getItem('collectorStatus');
+    
+    // Update UI and sessionStorage if server status differs
+    if (serverStatus !== currentStatus) {
+      sessionStorage.setItem('collectorStatus', serverStatus);
+      if (els.statusSelect) {
+        els.statusSelect.value = serverStatus;
+      }
+    }
+    
+    // Update location status text
+    if (els.locationStatus) {
+      els.locationStatus.textContent = serverStatus !== 'offline' ? 'Active' : 'Inactive';
+      els.locationStatus.className = serverStatus !== 'offline' 
+        ? 'text-green-600 dark:text-green-400' 
+        : 'text-red-600 dark:text-red-400';
+    }
+    
+    // Update global status badge with colors
+    if (els.globalStatusBadge) {
+      const statusText = serverStatus.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      els.globalStatusBadge.textContent = statusText;
+      els.globalStatusBadge.classList.remove('hidden');
+      
+      // Remove all status color classes
+      els.globalStatusBadge.classList.remove(
+        'bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300',
+        'bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300',
+        'bg-gray-100', 'dark:bg-gray-900/30', 'text-gray-700', 'dark:text-gray-300'
+      );
+      
+      // Add appropriate color classes based on status
+      if (serverStatus === 'online') {
+        els.globalStatusBadge.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300');
+      } else if (serverStatus === 'on_job') {
+        els.globalStatusBadge.classList.add('bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
+      } else if (serverStatus === 'offline') {
+        els.globalStatusBadge.classList.add('bg-gray-100', 'dark:bg-gray-900/30', 'text-gray-700', 'dark:text-gray-300');
+      }
+    }
+  }
+  
   if (els.collectorName) els.collectorName.textContent = stats.name;
   if (els.collectorNameHeader) els.collectorNameHeader.textContent = stats.name;
 }
@@ -181,16 +230,24 @@ function renderActiveRequests(requests) {
 
 function renderRequestsList(requests) {
   if (els.requestsSkeleton) els.requestsSkeleton.remove();
+  
+  if (!els.requestsList) {
+    console.warn('requestsList element not found in DOM');
+    return;
+  }
+  
   const filter = els.requestFilter?.value || 'all';
   const filtered = requests.filter(r => filter === 'all' || (filter === 'pending' && r.status === undefined) || filter === 'accepted' && r.status === 'accepted');
   els.requestsList.innerHTML = '';
   if (!filtered.length) {
     els.requestsList.innerHTML = '<p class="text-gray-500 dark:text-slate-400 text-xs p-2">No requests found</p>';
-    els.pendingBadge.classList.add('hidden');
+    if (els.pendingBadge) els.pendingBadge.classList.add('hidden');
     return;
   }
-  els.pendingBadge.classList.toggle('hidden', !requests.length);
-  els.pendingBadge.textContent = requests.length;
+  if (els.pendingBadge) {
+    els.pendingBadge.classList.toggle('hidden', !requests.length);
+    els.pendingBadge.textContent = requests.length;
+  }
   filtered.forEach(r => {
     const row = document.createElement('div');
     row.className = 'py-3 text-xs';
@@ -213,6 +270,12 @@ function renderRequestsList(requests) {
 
 function renderHistory(history) {
   if (els.historySkeleton) els.historySkeleton.remove();
+  
+  if (!els.historyList) {
+    console.warn('historyList element not found in DOM');
+    return;
+  }
+  
   els.historyList.innerHTML = '';
   if (!history.length) {
     els.historyList.innerHTML = '<p class="text-gray-500 dark:text-slate-400 text-xs p-2">No collection history</p>';
@@ -333,7 +396,12 @@ function renderAnalytics(analytics) {
 
 // Actions
 async function postJSON(url, payload) {
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const res = await fetch(url, { 
+    method: 'POST', 
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' }, 
+    body: JSON.stringify(payload) 
+  });
   const json = await res.json().catch(()=>({}));
   if (!res.ok || json.status === 'error') throw new Error(json.message || 'Request failed');
   return json;
@@ -440,12 +508,67 @@ function fitActiveMarkers() {
 }
 
 function locateMe() {
-  if (!navigator.geolocation) { toast('Geolocation unsupported','error'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    const ll = [pos.coords.latitude,pos.coords.longitude];
-    L.circleMarker(ll,{ radius:6, color:'#22c55e' }).addTo(state.map).bindPopup('You are here').openPopup();
-    state.map.flyTo(ll, 15);
-  }, () => toast('Could not get location','error'));
+  if (!navigator.geolocation) { 
+    toast('Geolocation unsupported','error'); 
+    return; 
+  }
+  
+  toast('Getting your location...', 'info');
+  
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const ll = [pos.coords.latitude, pos.coords.longitude];
+      
+      // Get vehicle type from state data, default to 'truck'
+      const vehicleType = state.data?.vehicle?.type?.toLowerCase() || 'truck';
+      
+      // Create icon based on vehicle type
+      const icon = L.icon({
+        iconUrl: `/Scrap/public/images/markers/${vehicleType}.svg`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+      });
+      
+      // Remove old marker if exists
+      if (state.myLocationMarker) {
+        state.map.removeLayer(state.myLocationMarker);
+      }
+      
+      // Add new marker with vehicle icon
+      state.myLocationMarker = L.marker(ll, { icon: icon })
+        .addTo(state.map)
+        .bindPopup('Your Location')
+        .openPopup();
+      
+      state.map.flyTo(ll, 15);
+      toast('Location found!', 'success');
+    }, 
+    (error) => {
+      // Handle different error types
+      let message = 'Could not get location';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          message = 'Location permission denied. Please enable location access in your browser settings.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message = 'Location information unavailable. Please check your device settings.';
+          break;
+        case error.TIMEOUT:
+          message = 'Location request timed out. Please try again.';
+          break;
+        default:
+          message = 'An unknown error occurred while getting location.';
+      }
+      console.warn('Geolocation error:', error);
+      toast(message, 'error');
+    },
+    {
+      enableHighAccuracy: false,
+      timeout: 15000,
+      maximumAge: 60000
+    }
+  );
 }
 
 function showRouteDetails(req) {
@@ -465,19 +588,27 @@ function clearRoutePanel() {
 // keep named function as well for any in-flight references
 async function logout() { return doLogout(); }
 
-// function guardAuth() {
-//   if (!sessionStorage.getItem('user_id') || sessionStorage.getItem('role') !== 'collector') {
-//     window.location.href = '/Scrap/login.php';
-//   }
-// }
+function guardAuth() {
+  const userId = sessionStorage.getItem('user_id');
+  const userRole = sessionStorage.getItem('user_role'); // Changed from 'role' to 'user_role'
+  
+  if (!userId || userRole !== 'collector') {
+    console.warn('guardAuth: User not authenticated as collector, redirecting to login');
+    window.location.href = '/Scrap/views/auth/login.php';
+    return false;
+  }
+  return true;
+}
 
 function initYear() { const y = document.getElementById('year'); if (y) y.textContent = new Date().getFullYear(); }
 
 // Entry
 window.addEventListener('DOMContentLoaded', () => {
   cacheEls();
-  // guardAuth may be disabled during development; provide a safe no-op when sessionStorage lacks required keys
-  try { guardAuth(); } catch (e) { console.warn('guardAuth not available or failed, continuing in dev mode'); }
+  // Check authentication before proceeding
+  if (!guardAuth()) {
+    return; // Stop execution if not authenticated
+  }
   initTheme();
   initMap();
   initNavigation();
@@ -490,6 +621,57 @@ window.addEventListener('DOMContentLoaded', () => {
   loadDashboardData();
   setInterval(()=>loadDashboardData({ silent: true }), 30000);
   showSection('overview');
+  
+  // Listen for status changes from sidebar
+  window.addEventListener('collectorStatusChanged', (event) => {
+    const newStatus = event.detail.status;
+    console.log('Status changed to:', newStatus);
+    
+    // Update status select if it exists
+    if (els.statusSelect) {
+      els.statusSelect.value = newStatus;
+    }
+    
+    // Update location status text
+    if (els.locationStatus) {
+      els.locationStatus.textContent = newStatus !== 'offline' ? 'Active' : 'Inactive';
+      els.locationStatus.className = newStatus !== 'offline' 
+        ? 'text-green-600 dark:text-green-400' 
+        : 'text-red-600 dark:text-red-400';
+    }
+    
+    // Update global status badge if it exists with appropriate colors
+    if (els.globalStatusBadge) {
+      const statusText = newStatus.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      els.globalStatusBadge.textContent = statusText;
+      els.globalStatusBadge.classList.remove('hidden');
+      
+      // Remove all status color classes
+      els.globalStatusBadge.classList.remove(
+        'bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300',
+        'bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300',
+        'bg-gray-100', 'dark:bg-gray-900/30', 'text-gray-700', 'dark:text-gray-300'
+      );
+      
+      // Add appropriate color classes based on status
+      if (newStatus === 'online') {
+        els.globalStatusBadge.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300');
+      } else if (newStatus === 'on_job') {
+        els.globalStatusBadge.classList.add('bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
+      } else if (newStatus === 'offline') {
+        els.globalStatusBadge.classList.add('bg-gray-100', 'dark:bg-gray-900/30', 'text-gray-700', 'dark:text-gray-300');
+      }
+    }
+    
+    // Update sessionStorage
+    sessionStorage.setItem('collectorStatus', newStatus);
+    
+    // Show toast notification
+    toast(`Status changed to ${newStatus.replace('_', ' ')}`, 'success');
+    
+    // Optionally reload dashboard data to get updated stats
+    loadDashboardData({ silent: true });
+  });
 });
 
 window.addEventListener('beforeunload', () => {

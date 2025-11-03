@@ -48,75 +48,48 @@ try {
         // Clear output buffer
         if (ob_get_level()) ob_end_clean();
 
-        // Query active collectors (schema-aware for location columns)
-        if ($hasInlinePosition) {
-            $sql = "
-                SELECT 
-                    c.id,
-                    c.current_latitude,
-                    c.current_longitude,
-                    c.active_status,
-                    c.last_active,
-                    ca.name,
-                    ca.vehicle_type,
-                    GROUP_CONCAT(DISTINCT cm.material_type) as materials,
-                    GROUP_CONCAT(DISTINCT car.area_name) as areas
-                FROM collectors c
-                JOIN collector_applications ca ON c.application_id = ca.id
-                LEFT JOIN collector_materials cm ON ca.id = cm.application_id
-                LEFT JOIN collector_areas car ON ca.id = car.application_id
-                WHERE c.active_status != 'offline'
-                AND c.last_active >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-                GROUP BY c.id
+        // Get latest location for each collector from collector_locations
+        if ($locationTimeColumn) {
+            $innerJoin = "
+                SELECT cl1.collector_id, cl1.latitude, cl1.longitude, cl1.`$locationTimeColumn` as last_updated
+                FROM collector_locations cl1
+                INNER JOIN (
+                    SELECT collector_id, MAX(`$locationTimeColumn`) AS max_time
+                    FROM collector_locations
+                    GROUP BY collector_id
+                ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.`$locationTimeColumn` = cl2.max_time
             ";
         } else {
-            // fallback: use last known position from collector_locations
-            if ($locationTimeColumn) {
-                $innerJoin = "
-                    SELECT cl1.collector_id, cl1.latitude, cl1.longitude
-                    FROM collector_locations cl1
-                    INNER JOIN (
-                        SELECT collector_id, MAX(`$locationTimeColumn`) AS max_time
-                        FROM collector_locations
-                        GROUP BY collector_id
-                    ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.`$locationTimeColumn` = cl2.max_time
-                ";
-            } else {
-                // Fallback to MAX(id) if no timestamp-like column exists
-                $innerJoin = "
-                    SELECT cl1.collector_id, cl1.latitude, cl1.longitude
-                    FROM collector_locations cl1
-                    INNER JOIN (
-                        SELECT collector_id, MAX(id) AS max_id
-                        FROM collector_locations
-                        GROUP BY collector_id
-                    ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.id = cl2.max_id
-                ";
-            }
-
-            $sql = "
-                SELECT
-                    c.id,
-                    loc.latitude AS current_latitude,
-                    loc.longitude AS current_longitude,
-                    c.active_status,
-                    c.last_active,
-                    ca.name,
-                    ca.vehicle_type,
-                    GROUP_CONCAT(DISTINCT cm.material_type) as materials,
-                    GROUP_CONCAT(DISTINCT car.area_name) as areas
-                FROM collectors c
-                JOIN collector_applications ca ON c.application_id = ca.id
-                LEFT JOIN (
-                    $innerJoin
-                ) loc ON loc.collector_id = c.id
-                LEFT JOIN collector_materials cm ON ca.id = cm.application_id
-                LEFT JOIN collector_areas car ON ca.id = car.application_id
-                WHERE c.active_status != 'offline'
-                AND c.last_active >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-                GROUP BY c.id
+            // Fallback to MAX(id) if no timestamp-like column exists
+            $innerJoin = "
+                SELECT cl1.collector_id, cl1.latitude, cl1.longitude, NOW() as last_updated
+                FROM collector_locations cl1
+                INNER JOIN (
+                    SELECT collector_id, MAX(id) AS max_id
+                    FROM collector_locations
+                    GROUP BY collector_id
+                ) cl2 ON cl1.collector_id = cl2.collector_id AND cl1.id = cl2.max_id
             ";
         }
+
+        $sql = "
+            SELECT
+                c.id,
+                c.name,
+                c.vehicle_type,
+                c.status,
+                c.materials_collected,
+                c.service_areas,
+                loc.latitude AS current_latitude,
+                loc.longitude AS current_longitude,
+                loc.last_updated
+            FROM collectors c
+            LEFT JOIN (
+                $innerJoin
+            ) loc ON loc.collector_id = c.id
+            WHERE c.status = 'approved'
+            AND loc.last_updated >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        ";
 
         $stmt = $pdo->query($sql);
         $collectors = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -126,18 +99,35 @@ try {
         echo "data: " . json_encode([
             'status' => 'success',
             'collectors' => array_map(function($collector) {
+                // Parse JSON fields
+                $materials = [];
+                if (!empty($collector['materials_collected'])) {
+                    $parsed = json_decode($collector['materials_collected'], true);
+                    if (is_array($parsed)) {
+                        $materials = $parsed;
+                    }
+                }
+                
+                $areas = [];
+                if (!empty($collector['service_areas'])) {
+                    $parsed = json_decode($collector['service_areas'], true);
+                    if (is_array($parsed)) {
+                        $areas = $parsed;
+                    }
+                }
+                
                 return [
                     'id' => $collector['id'],
                     'name' => $collector['name'],
                     'vehicle' => $collector['vehicle_type'],
-                    'status' => $collector['active_status'],
-                    'materials' => $collector['materials'] !== null && $collector['materials'] !== '' ? explode(',', $collector['materials']) : [],
-                    'areas' => $collector['areas'] !== null && $collector['areas'] !== '' ? explode(',', $collector['areas']) : [],
+                    'status' => $collector['status'],
+                    'materials' => $materials,
+                    'areas' => $areas,
                     'position' => [
                         'lat' => isset($collector['current_latitude']) ? floatval($collector['current_latitude']) : null,
                         'lng' => isset($collector['current_longitude']) ? floatval($collector['current_longitude']) : null
                     ],
-                    'lastActive' => $collector['last_active']
+                    'lastActive' => $collector['last_updated'] ?? null
                 ];
             }, $collectors)
         ]) . "\n\n";

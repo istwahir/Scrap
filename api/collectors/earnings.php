@@ -1,4 +1,9 @@
 <?php
+// Start session first
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../../config.php';
 require_once '../../controllers/AuthController.php';
 
@@ -44,24 +49,24 @@ try {
     
     switch ($period) {
         case 'daily':
-            $dateCondition = 'AND DATE(COALESCE(completed_at, updated_at, created_at)) >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)';
-            $groupBy = 'DATE(COALESCE(completed_at, updated_at, created_at))';
+            $dateCondition = 'AND DATE(r.updated_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)';
+            $groupBy = 'DATE(r.updated_at)';
             $dateFormat = '%b %d';
             break;
         case 'weekly':
-            $dateCondition = 'AND YEARWEEK(COALESCE(completed_at, updated_at, created_at), 1) >= YEARWEEK(DATE_SUB(CURRENT_DATE, INTERVAL 12 WEEK), 1)';
-            $groupBy = 'YEARWEEK(COALESCE(completed_at, updated_at, created_at), 1)';
+            $dateCondition = 'AND YEARWEEK(r.updated_at, 1) >= YEARWEEK(DATE_SUB(CURRENT_DATE, INTERVAL 12 WEEK), 1)';
+            $groupBy = 'YEARWEEK(r.updated_at, 1)';
             $dateFormat = 'Week %U';
             break;
         case 'yearly':
-            $dateCondition = 'AND YEAR(COALESCE(completed_at, updated_at, created_at)) >= YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 5 YEAR))';
-            $groupBy = 'YEAR(COALESCE(completed_at, updated_at, created_at))';
+            $dateCondition = 'AND YEAR(r.updated_at) >= YEAR(DATE_SUB(CURRENT_DATE, INTERVAL 5 YEAR))';
+            $groupBy = 'YEAR(r.updated_at)';
             $dateFormat = '%Y';
             break;
         case 'monthly':
         default:
-            $dateCondition = 'AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 12 MONTH)';
-            $groupBy = 'DATE_FORMAT(COALESCE(completed_at, updated_at, created_at), "%Y-%m")';
+            $dateCondition = 'AND r.updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 12 MONTH)';
+            $groupBy = 'DATE_FORMAT(r.updated_at, "%Y-%m")';
             $dateFormat = '%b %Y';
             break;
     }
@@ -71,10 +76,10 @@ try {
         SELECT
             COUNT(*) as total_collections,
             0 as total_earnings,
-            COALESCE(SUM(estimated_weight), 0) as total_weight
-        FROM collection_requests
-        WHERE collector_id = ?
-          AND status = 'completed'
+            COALESCE(SUM(r.estimated_weight), 0) as total_weight
+        FROM collection_requests r
+        WHERE r.collector_id = ?
+          AND r.status = 'completed'
           $dateCondition
     ");
     $stmt->execute([$collector['id']]);
@@ -87,12 +92,12 @@ try {
     $stmt = $pdo->prepare("
         SELECT
             $groupBy as period,
-            DATE_FORMAT(MIN(COALESCE(completed_at, updated_at, created_at)), '$dateFormat') as label,
+            DATE_FORMAT(MIN(r.updated_at), '$dateFormat') as label,
             0 as earnings,
-            COALESCE(SUM(estimated_weight), 0) as weight
-        FROM collection_requests
-        WHERE collector_id = ?
-          AND status = 'completed'
+            COALESCE(SUM(r.estimated_weight), 0) as weight
+        FROM collection_requests r
+        WHERE r.collector_id = ?
+          AND r.status = 'completed'
           $dateCondition
         GROUP BY $groupBy
         ORDER BY period ASC
@@ -103,14 +108,14 @@ try {
     // Get material breakdown
     $stmt = $pdo->prepare("
         SELECT
-            COALESCE(materials, 'Unknown') as material_type,
+            COALESCE(r.materials, 'Unknown') as material_type,
             0 as earnings,
             COUNT(*) as count
-        FROM collection_requests
-        WHERE collector_id = ?
-          AND status = 'completed'
+        FROM collection_requests r
+        WHERE r.collector_id = ?
+          AND r.status = 'completed'
           $dateCondition
-        GROUP BY COALESCE(materials, 'Unknown')
+        GROUP BY COALESCE(r.materials, 'Unknown')
     ");
     $stmt->execute([$collector['id']]);
     $materialBreakdown = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -118,7 +123,7 @@ try {
     // Get earnings history
     $stmt = $pdo->prepare("
         SELECT
-            DATE_FORMAT(COALESCE(r.completed_at, r.updated_at, r.created_at), '%b %d, %Y') as date,
+            DATE_FORMAT(r.updated_at, '%b %d, %Y') as date,
             u.name as customer_name,
             COALESCE(r.materials, 'Mixed') as material_type,
             COALESCE(r.estimated_weight, 0) as weight,
@@ -128,7 +133,7 @@ try {
         WHERE r.collector_id = ?
           AND r.status = 'completed'
           $dateCondition
-        ORDER BY COALESCE(r.completed_at, r.updated_at, r.created_at) DESC
+        ORDER BY r.updated_at DESC
         LIMIT 50
     ");
     $stmt->execute([$collector['id']]);

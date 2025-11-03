@@ -1,4 +1,9 @@
 <?php
+// Start session first
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../../config.php';
 require_once '../../controllers/AuthController.php';
 
@@ -22,7 +27,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     $stmt = $pdo->prepare("
-        SELECT c.id, c.active_status 
+        SELECT c.id
         FROM collectors c 
         WHERE c.user_id = ?
     ");
@@ -39,82 +44,84 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = json_decode(file_get_contents('php://input'), true);
         
-        if (!isset($data['latitude']) || !isset($data['longitude'])) {
-            throw new Exception('Missing location data');
-        }
-
-        // Validate coordinates
-        $latitude = floatval($data['latitude']);
-        $longitude = floatval($data['longitude']);
-
-        if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
-            throw new Exception('Invalid coordinates');
+        // Check if we have location data or just status update
+        $hasLocation = isset($data['latitude']) && isset($data['longitude']);
+        $hasStatus = isset($data['status']);
+        
+        if (!$hasLocation && !$hasStatus) {
+            throw new Exception('Missing location or status data');
         }
 
         // Start transaction
         $pdo->beginTransaction();
 
-        // Check if collectors table has current_latitude/current_longitude
-        $hasInlinePosition = false;
-        try {
-            $chk = $pdo->prepare("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = :db AND TABLE_NAME = 'collectors' AND COLUMN_NAME IN ('current_latitude','current_longitude')");
-            $chk->execute(['db' => DB_NAME]);
-            $row = $chk->fetch(PDO::FETCH_ASSOC);
-            $hasInlinePosition = isset($row['cnt']) && (int)$row['cnt'] >= 2;
-        } catch (Throwable $t) {
-            $hasInlinePosition = false;
-        }
+        if ($hasLocation) {
+            // Validate coordinates
+            $latitude = floatval($data['latitude']);
+            $longitude = floatval($data['longitude']);
 
-        // Update collectors table (conditionally include lat/lng)
-        if ($hasInlinePosition) {
+            if ($latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+                throw new Exception('Invalid coordinates');
+            }
+
+            // Insert into location history
+            $stmt = $pdo->prepare("
+                INSERT INTO collector_locations (
+                    collector_id, latitude, longitude
+                ) VALUES (
+                    :collector_id, :latitude, :longitude
+                )
+            ");
+            $stmt->execute([
+                'collector_id' => $collector['id'],
+                'latitude' => $latitude,
+                'longitude' => $longitude
+            ]);
+
+            // Update collector's current location
             $stmt = $pdo->prepare("
                 UPDATE collectors 
                 SET current_latitude = :latitude,
                     current_longitude = :longitude,
-                    last_active = NOW(),
-                    active_status = :status
-                WHERE id = :id
+                    last_active = NOW()
+                WHERE id = :collector_id
             ");
             $stmt->execute([
                 'latitude' => $latitude,
                 'longitude' => $longitude,
-                'status' => $data['status'] ?? $collector['active_status'],
-                'id' => $collector['id']
-            ]);
-        } else {
-            // Fallback: update only status/last_active
-            $stmt = $pdo->prepare("
-                UPDATE collectors 
-                SET last_active = NOW(),
-                    active_status = :status
-                WHERE id = :id
-            ");
-            $stmt->execute([
-                'status' => $data['status'] ?? $collector['active_status'],
-                'id' => $collector['id']
+                'collector_id' => $collector['id']
             ]);
         }
 
-        // Insert into location history
-        $stmt = $pdo->prepare("
-            INSERT INTO collector_locations (
-                collector_id, latitude, longitude
-            ) VALUES (
-                :collector_id, :latitude, :longitude
-            )
-        ");
-        $stmt->execute([
-            'collector_id' => $collector['id'],
-            'latitude' => $latitude,
-            'longitude' => $longitude
-        ]);
+        // Update status if provided
+        if ($hasStatus) {
+            $status = $data['status'];
+            
+            // Validate status value
+            $validStatuses = ['online', 'offline', 'on_job'];
+            if (!in_array($status, $validStatuses)) {
+                throw new Exception('Invalid status value. Must be: online, offline, or on_job');
+            }
+
+            // Update collector's active status
+            $stmt = $pdo->prepare("
+                UPDATE collectors 
+                SET active_status = :status,
+                    last_active = NOW()
+                WHERE id = :collector_id
+            ");
+            $stmt->execute([
+                'status' => $status,
+                'collector_id' => $collector['id']
+            ]);
+        }
 
         // Commit transaction
         $pdo->commit();
 
         echo json_encode([
             'status' => 'success',
-            'message' => 'Location updated successfully'
+            'message' => 'Updated successfully'
         ]);
 
     } else {
@@ -127,9 +134,16 @@ try {
         $pdo->rollBack();
     }
     
+    // Log the actual error for debugging
+    error_log("Update location error: " . $e->getMessage());
+    
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
-        'message' => $e->getMessage()
+        'message' => $e->getMessage(),
+        'debug' => [
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]
     ]);
 }

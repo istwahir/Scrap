@@ -428,7 +428,9 @@ async function logout() {
         const response = await fetch('/Scrap/api/logout.php', { method: 'POST' });
         const data = await response.json();
         if (data.status === 'success') {
-            window.location.href = '/Scrap/views/auth/login.php';
+            // Clear sessionStorage before redirecting
+            sessionStorage.clear();
+            window.location.href = '/Scrap/views/auth/login.php?logout=1';
         } else {
             alert('Logout failed: ' + (data.message || 'Unknown error'));
         }

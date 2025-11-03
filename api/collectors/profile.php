@@ -20,92 +20,118 @@ try {
     );
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Get comprehensive collector record with application and user details
+    // Get comprehensive collector record with user details and application info
     $stmt = $pdo->prepare('
         SELECT 
             c.*,
-            ca.name as application_name,
-            ca.phone as application_phone,
-            ca.id_number,
+            u.name as user_name,
+            u.phone as user_phone,
+            u.email,
             ca.date_of_birth,
             ca.address as home_address,
             ca.latitude as home_latitude,
-            ca.longitude as home_longitude,
-            ca.vehicle_type,
-            ca.vehicle_reg,
-            ca.status as application_status,
-            ca.created_at as joined_date,
-            u.name as user_name,
-            u.phone as user_phone,
-            u.email
+            ca.longitude as home_longitude
         FROM collectors c
         JOIN users u ON c.user_id = u.id
-        LEFT JOIN collector_applications ca ON c.application_id = ca.id
+        LEFT JOIN collector_applications ca ON c.phone = ca.phone
         WHERE c.user_id = ?
     ');
     $stmt->execute([$_SESSION['user_id']]);
     $collector = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$collector) {
+        // Log for debugging
+        error_log("Collector not found for user_id: " . $_SESSION['user_id']);
+        
+        // Check if user exists and their role
+        $userStmt = $pdo->prepare('SELECT id, role FROM users WHERE id = ?');
+        $userStmt->execute([$_SESSION['user_id']]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        
         http_response_code(403);
-        echo json_encode(['status' => 'error', 'message' => 'User is not a collector']);
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'No collector record found. Please complete your collector registration.',
+            'redirect' => '/Scrap/views/collectors/register.php',
+            'debug' => [
+                'user_id' => $_SESSION['user_id'],
+                'session_role' => $_SESSION['user_role'] ?? 'not set',
+                'db_role' => $user ? $user['role'] : 'user not found'
+            ]
+        ]);
         exit;
     }
 
     $collectorId = (int)$collector['id'];
-    $applicationId = isset($collector['application_id']) ? (int)$collector['application_id'] : null;
+
+    // Parse materials and service areas from JSON
+    $materials = [];
+    $areas = [];
+    
+    if (!empty($collector['materials_collected'])) {
+        $materialsJson = json_decode($collector['materials_collected'], true);
+        if (is_array($materialsJson)) {
+            $materials = array_map(function($m) { 
+                return ucfirst(str_replace('_', ' ', $m)); 
+            }, $materialsJson);
+        }
+    }
+    
+    if (!empty($collector['service_areas'])) {
+        $areasJson = json_decode($collector['service_areas'], true);
+        if (is_array($areasJson)) {
+            $areas = $areasJson;
+        }
+    }
+
+    // Get latest location from collector_locations
+    $stmt = $pdo->prepare('
+        SELECT latitude, longitude, timestamp 
+        FROM collector_locations 
+        WHERE collector_id = ? 
+        ORDER BY timestamp DESC 
+        LIMIT 1
+    ');
+    $stmt->execute([$collectorId]);
+    $location = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // Enhanced profile info with all collector details
+    // Calculate age from date_of_birth
+    $age = null;
+    $dateOfBirth = null;
+    if (!empty($collector['date_of_birth'])) {
+        $dateOfBirth = $collector['date_of_birth'];
+        $dob = new DateTime($dateOfBirth);
+        $now = new DateTime();
+        $age = $now->diff($dob)->y; // Calculate years
+    }
+    
     $profile = [
-        'name' => $collector['user_name'] ?? ($collector['application_name'] ?? '—'),
-        'phone' => $collector['user_phone'] ?? ($collector['application_phone'] ?? '—'),
+        'name' => $collector['user_name'] ?? $collector['name'] ?? '—',
+        'phone' => $collector['user_phone'] ?? $collector['phone'] ?? '—',
         'email' => $collector['email'] ?? '—',
         'id_number' => $collector['id_number'] ?? '—',
-        'date_of_birth' => $collector['date_of_birth'] ?? null,
-        'age' => null,
+        'date_of_birth' => $dateOfBirth,
+        'age' => $age,
         'home_address' => $collector['home_address'] ?? '—',
         'home_latitude' => isset($collector['home_latitude']) ? (float)$collector['home_latitude'] : null,
         'home_longitude' => isset($collector['home_longitude']) ? (float)$collector['home_longitude'] : null,
         'active_status' => $collector['active_status'] ?? 'offline',
-        'current_latitude' => isset($collector['current_latitude']) ? (float)$collector['current_latitude'] : null,
-        'current_longitude' => isset($collector['current_longitude']) ? (float)$collector['current_longitude'] : null,
-        'last_active' => $collector['last_active'] ?? null,
-        'joined_date' => isset($collector['joined_date']) ? date('M j, Y', strtotime($collector['joined_date'])) : '—',
-        'application_status' => $collector['application_status'] ?? 'approved',
-        'verification_status' => ($collector['application_status'] ?? '') === 'approved' ? 'verified' : 'pending'
+        'current_latitude' => $location ? (float)$location['latitude'] : null,
+        'current_longitude' => $location ? (float)$location['longitude'] : null,
+        'last_active' => $location ? $location['timestamp'] : null,
+        'joined_date' => isset($collector['created_at']) ? date('M j, Y', strtotime($collector['created_at'])) : '—',
+        'application_status' => $collector['status'] ?? 'pending',
+        'verification_status' => ($collector['verified'] ?? 0) == 1 ? 'verified' : 'pending'
     ];
-
-    // Calculate age if DOB is available
-    if ($collector['date_of_birth']) {
-        $dob = new DateTime($collector['date_of_birth']);
-        $now = new DateTime();
-        $profile['age'] = $now->diff($dob)->y;
-    }
 
     // Vehicle info with comprehensive details
     $vehicle = [
         'type' => $collector['vehicle_type'] ?? 'N/A',
         'type_display' => ucfirst($collector['vehicle_type'] ?? 'N/A'),
-        'registration' => $collector['vehicle_reg'] ?? 'N/A',
-        'materials' => []
+        'registration' => $collector['vehicle_registration'] ?? 'N/A',
+        'materials' => $materials
     ];
-
-    // Materials from collector_materials
-    if ($applicationId) {
-        $stmt = $pdo->prepare('SELECT material_type FROM collector_materials WHERE application_id = ?');
-        $stmt->execute([$applicationId]);
-        $vehicle['materials'] = array_map(function($r){ 
-            return ucfirst(str_replace('_', ' ', $r['material_type'])); 
-        }, $stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
-
-    // Service areas from collector_areas
-    $areas = [];
-    if ($applicationId) {
-        $stmt = $pdo->prepare('SELECT area_name FROM collector_areas WHERE application_id = ?');
-        $stmt->execute([$applicationId]);
-        $areas = array_map(function($r){ return $r['area_name']; }, $stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
 
     // Enhanced stats from multiple sources
     // Total collections (completed)
@@ -138,8 +164,8 @@ try {
     $den = (int)$resp['completed_cnt'] + (int)$resp['declined_cnt'];
     $responseRate = $den > 0 ? round(((int)$resp['completed_cnt'] * 100.0) / $den, 1) : 0.0;
 
-    // Use stored totals from collectors table
-    $totalEarnings = isset($collector['total_earnings']) ? (float)$collector['total_earnings'] : 0.0;
+    // Calculate earnings and rating (collectors table doesn't have these stored)
+    $totalEarnings = 0.0; // TODO: Calculate from completed collections
     $rating = isset($collector['rating']) ? (float)$collector['rating'] : 0.0;
 
     // Count reviews (assuming completed requests can be reviewed)
@@ -158,7 +184,7 @@ try {
 
     // History (last 20 completed with more details)
     $stmt = $pdo->prepare('SELECT 
-        DATE_FORMAT(COALESCE(r.completed_at, r.updated_at, r.created_at), "%b %d, %Y") AS date,
+        DATE_FORMAT(r.updated_at, "%b %d, %Y") AS date,
         COALESCE(r.materials, "Mixed") AS material_type,
         COALESCE(r.estimated_weight, 0) AS weight,
         0 AS amount,
@@ -168,20 +194,20 @@ try {
         FROM collection_requests r
         LEFT JOIN users u ON r.user_id = u.id
         WHERE r.collector_id = ? AND r.status = "completed"
-        ORDER BY COALESCE(r.completed_at, r.updated_at, r.created_at) DESC
+        ORDER BY r.updated_at DESC
         LIMIT 20');
     $stmt->execute([$collectorId]);
     $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Analytics: earnings trend (weights proxy) last 7 days
     $stmt = $pdo->prepare('SELECT 
-        DATE_FORMAT(COALESCE(completed_at, updated_at, created_at), "%b %d") as date, 
+        DATE_FORMAT(updated_at, "%b %d") as date, 
         COALESCE(SUM(estimated_weight), 0) as daily_earnings 
         FROM collection_requests 
         WHERE collector_id = ? AND status = "completed" 
-        AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
-        GROUP BY DATE(COALESCE(completed_at, updated_at, created_at)) 
-        ORDER BY DATE(COALESCE(completed_at, updated_at, created_at))');
+        AND updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY) 
+        GROUP BY DATE(updated_at) 
+        ORDER BY DATE(updated_at)');
     $stmt->execute([$collectorId]);
     $earningsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -196,7 +222,7 @@ try {
         COUNT(*) as cnt 
         FROM collection_requests 
         WHERE collector_id = ? AND status = "completed" 
-        AND COALESCE(completed_at, updated_at, created_at) >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) 
+        AND updated_at >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY) 
         GROUP BY COALESCE(materials, "Unknown") 
         ORDER BY cnt DESC');
     $stmt->execute([$collectorId]);

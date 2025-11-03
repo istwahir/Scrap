@@ -1,4 +1,13 @@
 <?php
+// Start session and check authentication
+require_once '../../config.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'collector') {
+    header('Location: /Scrap/views/auth/login.php');
+    exit();
+}
+
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");

@@ -1,13 +1,12 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Credentials: true');
+session_start();
 
 require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../controllers/AuthController.php';
 
-// Verify admin authentication
-$auth = new AuthController();
-if (!$auth->isAuthenticated() || !$auth->isAdmin()) {
+// Check admin authentication
+if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
     http_response_code(401);
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
@@ -15,17 +14,17 @@ if (!$auth->isAuthenticated() || !$auth->isAdmin()) {
 
 // Get period from query string (default: month)
 $period = $_GET['period'] ?? 'month';
-$interval = '30 DAY'; // default
+$days = 30; // default
 
 switch($period) {
     case 'week':
-        $interval = '7 DAY';
+        $days = 7;
         break;
     case 'month':
-        $interval = '30 DAY';
+        $days = 30;
         break;
     case 'year':
-        $interval = '365 DAY';
+        $days = 365;
         break;
     default:
         http_response_code(400);
@@ -35,24 +34,19 @@ switch($period) {
 
 // Get collection trends
 try {
-    $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME,
-        DB_USER,
-        DB_PASS
-    );
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn = getDBConnection();
 
-    // Query for collections trend
-    $stmt = $pdo->prepare("
+    // Query for collection requests trend
+    $stmt = $conn->prepare("
         SELECT 
             DATE(created_at) as date,
             COUNT(*) as count
-        FROM collections 
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ?)
+        FROM collection_requests 
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
         GROUP BY DATE(created_at)
         ORDER BY date
     ");
-    $stmt->execute([$interval]);
+    $stmt->execute([$days]);
 
     $trends = [
         'labels' => [],
@@ -60,21 +54,43 @@ try {
     ];
 
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $trends['labels'][] = date('M j', strtotime($row['date']));
+        // Format date based on period
+        if ($period === 'year') {
+            $trends['labels'][] = date('M Y', strtotime($row['date']));
+        } else {
+            $trends['labels'][] = date('M j', strtotime($row['date']));
+        }
         $trends['collections'][] = (int)$row['count'];
+    }
+    
+    // If no data, provide placeholder
+    if (empty($trends['labels'])) {
+        $trends['labels'] = ['No Data'];
+        $trends['collections'] = [0];
     }
 
     // Return trend data
     echo json_encode([
         'status' => 'success',
-        'trends' => $trends
+        'trends' => $trends,
+        'period' => $period,
+        'days' => $days
     ]);
 
 } catch (PDOException $e) {
+    error_log("Trends API Error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'Database error',
+        'debug' => $e->getMessage()
     ]);
-    exit;
+} catch (Exception $e) {
+    error_log("Trends API Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Server error',
+        'debug' => $e->getMessage()
+    ]);
 }

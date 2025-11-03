@@ -49,8 +49,15 @@ header("Expires: 0");
             <div class="p-4 md:p-6 space-y-6">
                 <!-- Welcome Header -->
                 <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-700 rounded-lg shadow-sm p-5 border border-green-100 dark:border-slate-600">
-                    <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Welcome back, <span id="collectorNameHeader">Collector</span>!</h1>
-                    <p class="text-sm text-gray-600 dark:text-slate-300">Here's your dashboard overview for today</p>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Welcome back, <span id="collectorNameHeader">Collector</span>!</h1>
+                            <p class="text-sm text-gray-600 dark:text-slate-300">Here's your dashboard overview for today</p>
+                        </div>
+                        <div id="globalStatusBadge" class="hidden px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
+                            Online
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Statistics Grid -->
@@ -212,11 +219,51 @@ header("Expires: 0");
                         </div>
                     </div>
                 </div>
+
+                <!-- Requests List Section -->
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">All Requests</h2>
+                            <span id="pendingBadge" class="hidden px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">0</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="requestFilter" class="text-xs px-3 py-1.5 rounded border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200">
+                                <option value="all">All Requests</option>
+                                <option value="pending">Pending</option>
+                                <option value="accepted">Accepted</option>
+                            </select>
+                            <button id="reloadRequests" class="text-xs px-3 py-1.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 transition-colors">Reload</button>
+                        </div>
+                    </div>
+                    <div id="requestsList" class="space-y-2 min-h-[8rem]">
+                        <div id="requestsSkeleton">
+                            <div class="skeleton h-16 rounded mb-2"></div>
+                            <div class="skeleton h-16 rounded mb-2"></div>
+                            <div class="skeleton h-16 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection History Section -->
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Collection History</h2>
+                        <button id="reloadHistory" class="text-xs px-3 py-1.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 transition-colors">Reload</button>
+                    </div>
+                    <div id="historyList" class="space-y-2 min-h-[8rem]">
+                        <div id="historySkeleton">
+                            <div class="skeleton h-12 rounded mb-2"></div>
+                            <div class="skeleton h-12 rounded mb-2"></div>
+                            <div class="skeleton h-12 rounded"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
     </main>
     </div>
-<script src="/Scrap/public/js/collector-tracker.js"></script>
-<script type="module" src="/Scrap/public/js/collector-dashboard.js"></script>
+<script src="/Scrap/public/js/collector-tracker.js?v=<?php echo time(); ?>"></script>
+<script type="module" src="/Scrap/public/js/collector-dashboard.js?v=<?php echo time(); ?>"></script>
 <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
 <?php 
 // Pass extra scripts placeholder if needed later
