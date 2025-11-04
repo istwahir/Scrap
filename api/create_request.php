@@ -1,13 +1,17 @@
 <?php
-// Enable error reporting for debugging
+// Disable display errors to prevent HTML output in JSON response
 error_reporting(E_ALL);
-ini_set('display_errors', 1); // Temporarily enabled for debugging
+ini_set('display_errors', 0); // Disabled for clean JSON output
 ini_set('log_errors', 1);
+
+// Start output buffering to catch any unexpected output
+ob_start();
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../includes/CollectorAssignment.php';
 
+// Set JSON header first before any output
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -15,8 +19,12 @@ header('Access-Control-Allow-Headers: Content-Type');
 
 // Handle preflight OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    ob_end_clean();
     exit(0);
 }
+
+// Clear any buffered output before processing
+ob_clean();
 
 // Initialize auth controller
 $auth = new AuthController();
@@ -41,37 +49,61 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Helper function to sanitize input
-function sanitizeInput($data) {
-    return htmlspecialchars(strip_tags(trim($data)), ENT_QUOTES, 'UTF-8');
-}
-
 try {
     // Start session if not already started
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
     
+    // Get database connection
     $db = getDBConnection();
+    
+    if (!$db) {
+        throw new Exception('Database connection failed');
+    }
     
     // Validate required fields
     $required = ['materials', 'address', 'lat', 'lng', 'date', 'time'];
     $missing = array_filter($required, function($field) {
-        return !isset($_POST[$field]);
+        return !isset($_POST[$field]) || empty($_POST[$field]);
     });
     
     if (!empty($missing)) {
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Missing required fields: ' . implode(', ', $missing)
+            'message' => 'Missing required fields: ' . implode(', ', $missing),
+            'debug' => [
+                'received_fields' => array_keys($_POST)
+            ]
         ]);
         exit;
     }
     
     // Validate materials
     $allowedMaterials = ['plastic', 'paper', 'metal', 'glass', 'electronics'];
-    $materials = is_array($_POST['materials']) ? $_POST['materials'] : [$_POST['materials']];
+    
+    // Handle materials from checkboxes or comma-separated string
+    if (isset($_POST['materials'])) {
+        if (is_array($_POST['materials'])) {
+            $materials = $_POST['materials'];
+        } else {
+            // If it's a string, split by comma
+            $materials = array_map('trim', explode(',', $_POST['materials']));
+        }
+    } else {
+        $materials = [];
+    }
+    
+    if (empty($materials)) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Please select at least one material type'
+        ]);
+        exit;
+    }
+    
     $invalidMaterials = array_diff($materials, $allowedMaterials);
     
     if (!empty($invalidMaterials)) {
@@ -245,15 +277,24 @@ try {
     
 } catch (Exception $e) {
     // Rollback transaction on error
-    if (isset($db)) {
+    if (isset($db) && $db->inTransaction()) {
         $db->rollBack();
     }
     
+    // Log the full error
     error_log("Create request error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+    
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to create request: ' . $e->getMessage()
+        'message' => 'Failed to create request',
+        'error_details' => $e->getMessage(),
+        'error_file' => $e->getFile(),
+        'error_line' => $e->getLine()
     ]);
 }
+
+// Clean output buffer and send response
+ob_end_flush();
 ?>

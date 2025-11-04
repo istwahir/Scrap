@@ -394,16 +394,18 @@ require_once __DIR__ . '/../../config.php';
                 return;
             }
 
-            if (!marker) {
+            if (!latInput.value || !lngInput.value) {
                 alert('Please drop a pin on the map so the collector knows where to go.');
                 return;
             }
 
             loadingOverlay.classList.remove('hidden');
             const formData = new FormData(form);
+            
+            // Ensure photo is included if selected
             const photoInput = document.getElementById('photo');
             if (photoInput.files.length > 0) {
-                formData.append('photo', photoInput.files[0]);
+                formData.set('photo', photoInput.files[0]);
             }
 
             try {
@@ -411,17 +413,34 @@ require_once __DIR__ . '/../../config.php';
                     method: 'POST',
                     body: formData
                 });
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    throw new Error('Server error. Please check the browser console for details.');
+                }
+                
                 const data = await response.json();
 
                 if (data.status === 'success') {
-                    alert('Request submitted successfully!');
-                    window.location.href = `/Scrap/request.php?id=${data.request_id}`;
+                    alert('✅ Request submitted successfully! You earned ' + data.points_earned + ' points.');
+                    window.location.href = `/Scrap/views/citizens/request_details.php?id=${data.request_id}`;
                 } else {
-                    alert(data.message || 'Failed to submit request.');
+                    // Show detailed error message
+                    let errorMsg = data.message || 'Failed to submit request.';
+                    if (data.error_details) {
+                        errorMsg += '\n\nDetails: ' + data.error_details;
+                    }
+                    if (data.debug) {
+                        console.log('Debug info:', data.debug);
+                    }
+                    alert(errorMsg);
                 }
             } catch (error) {
                 console.error('Request submission failed:', error);
-                alert('Network error. Please try again.');
+                alert('❌ Network error or invalid response. Please try again.\n\nError: ' + error.message);
             } finally {
                 loadingOverlay.classList.add('hidden');
             }
@@ -430,26 +449,23 @@ require_once __DIR__ . '/../../config.php';
         const urlParams = new URLSearchParams(window.location.search);
         const dropoffId = urlParams.get('dropoff');
         if (dropoffId) {
-            fetch(`/api/get_dropoff.php?id=${dropoffId}`)
+            fetch(`/Scrap/api/get_dropoffs.php?id=${dropoffId}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
+                    if (data.status === 'success' && data.dropoff) {
                         const latlng = {
                             lat: parseFloat(data.dropoff.lat),
                             lng: parseFloat(data.dropoff.lng)
                         };
                         updateMarker(latlng);
                         map.setView(latlng, 16);
-                        addressInput.value = data.dropoff.address;
+                        if (data.dropoff.address) {
+                            addressInput.value = data.dropoff.address;
+                        }
                     }
                 })
                 .catch(error => console.error('Failed to load drop-off point:', error));
         }
-
-        map.on('click', function(e) {
-            var latlng = e.latlng;
-            document.getElementById('arrivalInput').value = latlng.lat + ', ' + latlng.lng;
-        });
     </script>
 </body>
 </html>
