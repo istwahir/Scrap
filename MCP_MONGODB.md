@@ -651,7 +651,7 @@ db.collection_requests.createIndex({ "pickup_location": "2dsphere" });
 ## Environment Variables
 
 ```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/kiambu_recycling
+MONGODB_URI=
 MONGODB_DB=kiambu_recycling
 JWT_SECRET=your_jwt_secret_key
 MPESA_CONSUMER_KEY=your_mpesa_key
