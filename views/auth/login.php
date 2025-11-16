@@ -195,15 +195,16 @@ if ($currentFile !== 'login.php' && $currentFile !== 'signup.php' && $currentFil
                     sessionStorage.setItem('user_id', data.user.id);
                     sessionStorage.setItem('user_role', data.user.role);
                     sessionStorage.setItem('email', data.user.email);
+                    sessionStorage.setItem('user_name', data.user.name);
 
                     // Redirect based on role
                     if (data.user.role === 'admin') {
-                        window.location.href = '/Scrap/public/admin/dashboard.php';
+                        window.location.href = '/Scrap/views/admin/dashboard.php';
                     } else if (data.user.role === 'collector') {
-                        window.location.href = '/Scrap/public/collectors/dashboard.php';
+                        window.location.href = '/Scrap/views/collectors/dashboard.php';
                     } else {
                         // Regular user/citizen dashboard
-                        window.location.href = '/Scrap/dashboard.php';
+                        window.location.href = '/Scrap/views/citizens/dashboard.php';
                     }
                 } else {
                     showError(data.message || 'Login failed');

@@ -25,29 +25,34 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <nav class="p-4 flex-1 overflow-y-auto">
         <ul class="space-y-1 text-sm">
             <li>
-                <a href="/Scrap/public/collectors/dashboard.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'dashboard.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
+                <a href="/Scrap/views/collectors/dashboard.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'dashboard.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
                     Overview
                 </a>
             </li>
             <li>
-                <a href="/Scrap/public/collectors/requests.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'requests.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
+                <a href="/Scrap/views/collectors/requests.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'requests.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
                     Requests
                 </a>
             </li>
             <li>
-                <a href="/Scrap/public/collectors/earnings.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'earnings.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
+                <a href="/Scrap/views/collectors/earnings.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'earnings.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
                     Earnings
                 </a>
             </li>
             <li>
-                <a href="/Scrap/public/collectors/profile.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'profile.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
+                <a href="/Scrap/views/collectors/dropoff_points.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'dropoff_points.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
+                    My Drop-off Points
+                </a>
+            </li>
+            <li>
+                <a href="/Scrap/views/collectors/profile.php" class="flex items-center px-3 py-2 rounded-md <?= $current_page === 'profile.php' ? 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700/60' ?>">
                     Profile
                 </a>
             </li>
         </ul>
     </nav>
     <div class="p-4 border-t border-gray-200 dark:border-slate-700 mt-auto space-y-2">
-        <a href="/Scrap/public/collectors/profile.php" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-100 shadow hover:bg-green-50 dark:hover:bg-green-900/40 border border-gray-200 dark:border-slate-700 transition-all">
+        <a href="/Scrap/views/collectors/profile.php" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-100 shadow hover:bg-green-50 dark:hover:bg-green-900/40 border border-gray-200 dark:border-slate-700 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.657 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             <span class="font-medium">Profile</span>
         </a>

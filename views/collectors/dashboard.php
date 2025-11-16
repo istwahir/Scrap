@@ -1,5 +1,8 @@
 <?php
 session_start();
+require_once __DIR__ . '/../../includes/auth.php';
+requireCollector();
+
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -33,6 +36,37 @@ header("Expires: 0");
         .skeleton { position: relative; overflow: hidden; background: linear-gradient(110deg,#f4f4f5 8%,#e4e4e7 18%,#f4f4f5 33%); background-size:200% 100%; animation: shine 1.1s linear infinite; }
         .dark .skeleton { background: linear-gradient(110deg,#334155 8%,#475569 18%,#334155 33%); }
         @keyframes shine { to { background-position-x: -200%; } }
+        
+        /* Custom Drop-off Point Marker */
+        .custom-dropoff-marker {
+            background: transparent !important;
+            border: none !important;
+        }
+        
+        /* Custom Tooltip Styling */
+        .custom-dropoff-tooltip {
+            background-color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            padding: 12px !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+        }
+        
+        .custom-dropoff-tooltip::before {
+            border-top-color: white !important;
+        }
+        
+        .leaflet-tooltip-top::before {
+            border-top-color: white !important;
+        }
+
+    /* Vehicle icon with pulsating ring for current user location */
+    .vehicle-pulse { position: relative; width:40px; height:40px; }
+    .vehicle-pulse .pulse-ring { position:absolute; top:50%; left:50%; width:40px; height:40px; transform:translate(-50%,-50%); border-radius:50%; background:rgba(37,99,235,0.35); animation:vehiclePulse 2s infinite; }
+    .vehicle-pulse img { position:relative; width:32px; height:32px; top:4px; left:4px; }
+    @keyframes vehiclePulse { 0% { opacity:0.9; transform:translate(-50%, -50%) scale(0.6); } 60% { opacity:0.15; transform:translate(-50%, -50%) scale(1.4); } 100% { opacity:0; transform:translate(-50%, -50%) scale(1.6); } }
+    .dark .vehicle-pulse .pulse-ring { background:rgba(59,130,246,0.45); }
     </style>
     <script>
         // Ensure body is shown after styles are loaded
@@ -49,13 +83,13 @@ header("Expires: 0");
             <div class="p-4 md:p-6 space-y-6">
                 <!-- Welcome Header -->
                 <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-700 rounded-lg shadow-sm p-5 border border-green-100 dark:border-slate-600">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
                         <div>
                             <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Welcome back, <span id="collectorNameHeader">Collector</span>!</h1>
                             <p class="text-sm text-gray-600 dark:text-slate-300">Here's your dashboard overview for today</p>
                         </div>
-                        <div id="globalStatusBadge" class="hidden px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                            Online
+                        <div id="globalStatusBadge" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                            Offline
                         </div>
                     </div>
                 </div>
@@ -265,6 +299,63 @@ header("Expires: 0");
 <script src="/Scrap/public/js/collector-tracker.js?v=<?php echo time(); ?>"></script>
 <script type="module" src="/Scrap/public/js/collector-dashboard.js?v=<?php echo time(); ?>"></script>
 <div id="toastContainer" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+<script>
+// Update status badge UI
+function updateStatusBadge(status) {
+    const badge = document.getElementById('globalStatusBadge');
+    if (!badge) return;
+    
+    badge.textContent = formatStatus(status);
+    
+    // Remove all status classes
+    badge.classList.remove('bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300');
+    badge.classList.remove('bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
+    badge.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+    
+    // Add appropriate classes
+    if (status === 'online') {
+        badge.classList.add('bg-green-100', 'dark:bg-green-900/30', 'text-green-700', 'dark:text-green-300');
+    } else if (status === 'on_job') {
+        badge.classList.add('bg-blue-100', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
+    } else {
+        badge.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+    }
+}
+
+// Format status for display
+function formatStatus(status) {
+    if (status === 'on_job') return 'On Job';
+    if (status === 'online') return 'Available';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+// Load initial status on page load
+async function loadCurrentStatus() {
+    try {
+        const response = await fetch('/Scrap/api/collectors/dashboard.php');
+        const data = await response.json();
+        
+        if (data.status === 'success' && data.collector && data.collector.active_status) {
+            updateStatusBadge(data.collector.active_status);
+        } else if (data.status === 'success' && data.stats && data.stats.active_status) {
+            updateStatusBadge(data.stats.active_status);
+        }
+    } catch (error) {
+        console.error('Error loading current status:', error);
+    }
+}
+
+// Listen for status changes from sidebar
+window.addEventListener('collectorStatusChanged', function(e) {
+    if (e.detail && e.detail.status) {
+        updateStatusBadge(e.detail.status);
+    }
+});
+
+// Load status when page loads
+window.addEventListener('DOMContentLoaded', loadCurrentStatus);
+</script>
 <?php 
 // Pass extra scripts placeholder if needed later
 $extraScripts = '';

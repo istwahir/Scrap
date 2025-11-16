@@ -62,6 +62,21 @@ requireAdmin();
                 </div>
             </div>
 
+            <!-- Rejected Applications Section -->
+            <div class="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-6 border border-red-200 dark:border-red-800">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Rejected Applications</h2>
+                        <p class="text-sm text-gray-600 dark:text-slate-400">Previously rejected collector applications (users can reapply)</p>
+                    </div>
+                    <span id="rejectedApplicationsCount" class="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-semibold">0</span>
+                </div>
+                <div id="rejectedApplicationsContainer" class="space-y-4">
+                    <!-- Loading state -->
+                    <div class="text-center py-4 text-gray-500">Loading...</div>
+                </div>
+            </div>
+
             <!-- Stats Grid -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-slate-700">
@@ -172,15 +187,17 @@ requireAdmin();
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Contact</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Vehicle</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Active</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Collections</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Rating</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Joined</th>
                                 <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-slate-300 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="collectorsTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
                             <!-- Loading state -->
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="9" class="px-6 py-12 text-center">
                                     <div class="flex items-center justify-center gap-3">
                                         <div class="w-5 h-5 border-3 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                                         <span class="text-gray-500 dark:text-slate-400">Loading collectors...</span>
@@ -323,6 +340,7 @@ requireAdmin();
                     updateStats(data.stats);
                     console.log('Applications:', data.applications); // Debug log
                     renderApplications(data.applications || [], data.applicationStats || {});
+                    renderRejectedApplications(data.applications || []);
                     populateVehicleFilter(); // Populate vehicle filter from data
                     renderCollectors();
                 } else {
@@ -332,7 +350,7 @@ requireAdmin();
                 console.error('Failed to load collectors:', error);
                 document.getElementById('collectorsTableBody').innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-red-600 dark:text-red-400">
+                        <td colspan="9" class="px-6 py-8 text-center text-red-600 dark:text-red-400">
                             Failed to load collectors. Please try again.
                         </td>
                     </tr>
@@ -489,6 +507,88 @@ requireAdmin();
                             <button onclick="rejectApplication(${app.id})" 
                                     class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors whitespace-nowrap">
                                 <i class="fas fa-times mr-1"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render rejected applications
+        function renderRejectedApplications(applications) {
+            const container = document.getElementById('rejectedApplicationsContainer');
+            const countBadge = document.getElementById('rejectedApplicationsCount');
+            
+            const rejectedApps = applications.filter(app => app.status === 'rejected');
+            countBadge.textContent = rejectedApps.length;
+            
+            if (rejectedApps.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500 dark:text-slate-400">
+                        <i class="fas fa-check-circle text-4xl mb-2"></i>
+                        <p>No rejected applications</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = rejectedApps.map(app => `
+                <div class="bg-white dark:bg-slate-800 rounded-lg p-5 border border-gray-200 dark:border-slate-700 hover:shadow-lg transition-shadow opacity-75">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Personal Info -->
+                            <div>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white font-bold text-lg">
+                                        ${app.full_name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white">${app.full_name}</p>
+                                        <p class="text-sm text-gray-500 dark:text-slate-400">${app.phone_number}</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-slate-400">
+                                    <i class="fas fa-calendar mr-1"></i>Applied: ${new Date(app.created_at).toLocaleDateString()}
+                                </p>
+                                <span class="inline-flex items-center px-2 py-1 mt-2 rounded-md text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                                    <i class="fas fa-times-circle mr-1"></i>Rejected
+                                </span>
+                            </div>
+                            
+                            <!-- Vehicle Info -->
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Vehicle</p>
+                                <p class="font-medium text-gray-900 dark:text-white capitalize flex items-center gap-2">
+                                    ${getVehicleIcon(app.vehicle_type)}
+                                    <span>${app.vehicle_type}</span>
+                                </p>
+                                <p class="text-sm text-gray-600 dark:text-slate-300 font-mono">${app.vehicle_reg}</p>
+                                <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>${app.residential_area || 'N/A'}
+                                </p>
+                            </div>
+                            
+                            <!-- Areas & Materials -->
+                            <div>
+                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Coverage</p>
+                                <p class="text-sm text-gray-900 dark:text-white mb-1">
+                                    <i class="fas fa-map mr-1 text-blue-600"></i>${app.service_areas || 'N/A'}
+                                </p>
+                                <p class="text-sm text-gray-900 dark:text-white">
+                                    <i class="fas fa-recycle mr-1 text-green-600"></i>${app.materials_collected || 'N/A'}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="flex flex-col gap-2">
+                            <button onclick="viewApplication(${app.id})" 
+                                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                                <i class="fas fa-eye mr-1"></i>View Details
+                            </button>
+                            <button onclick="deleteApplication(${app.id})" 
+                                    class="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap">
+                                <i class="fas fa-trash mr-1"></i>Delete
                             </button>
                         </div>
                     </div>
@@ -821,6 +921,38 @@ requireAdmin();
             );
         }
 
+        // Delete rejected application
+        async function deleteApplication(id) {
+            showConfirmationModal(
+                'Delete Application',
+                'Are you sure you want to permanently delete this rejected application? This action cannot be undone.',
+                'Delete',
+                'bg-red-600 hover:bg-red-700',
+                'fas fa-trash text-white',
+                'bg-red-100 dark:bg-red-900/20',
+                async () => {
+                    try {
+                        const response = await fetch(`/Scrap/api/admin/collectors.php?application_id=${id}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.status === 'success') {
+                            showToast('Application deleted successfully.', 'success');
+                            loadCollectors();
+                        } else {
+                            showToast(data.message || 'Failed to delete application', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting application:', error);
+                        showToast('Failed to delete application. Please try again.', 'error');
+                    }
+                }
+            );
+        }
+
         // Render collectors table
         function renderCollectors() {
             const tbody = document.getElementById('collectorsTableBody');
@@ -850,7 +982,7 @@ requireAdmin();
             if (filtered.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
+                        <td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                             <i class="fas fa-search text-3xl mb-2"></i>
                             <p class="font-medium">No collectors found matching your filters.</p>
                             <button onclick="clearFilters()" class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
@@ -889,7 +1021,18 @@ requireAdmin();
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        ${getStatusBadge(collector.status)}
+                        <div class="flex items-center gap-2">
+                            ${getStatusBadge(collector.status)}
+                            ${collector.verified == 1 ? `
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full">
+                                    <i class="fas fa-check-circle"></i>
+                                    Verified
+                                </span>
+                            ` : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        ${getActiveStatusBadge(collector.active_status)}
                     </td>
                     <td class="px-6 py-4">
                         <p class="text-sm font-semibold text-gray-900 dark:text-white">${collector.total_collections || 0}</p>
@@ -902,6 +1045,10 @@ requireAdmin();
                             </svg>
                             <span class="text-sm font-medium text-gray-900 dark:text-white">${collector.rating || '5.0'}</span>
                         </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <p class="text-sm text-gray-900 dark:text-white">${collector.created_at ? new Date(collector.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</p>
+                        <p class="text-xs text-gray-500 dark:text-slate-400">${collector.created_at ? new Date(collector.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}</p>
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
@@ -944,6 +1091,20 @@ requireAdmin();
                 rejected: '<span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border border-gray-200 dark:border-gray-800"><i class="fas fa-times-circle"></i> Rejected</span>'
             };
             return badges[status] || badges.pending;
+        }
+
+        // Get active status badge (online/offline/on_job)
+        function getActiveStatusBadge(activeStatus) {
+            if (!activeStatus) {
+                return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"><span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Offline</span>';
+            }
+            
+            const badges = {
+                online: '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Online</span>',
+                offline: '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"><span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Offline</span>',
+                on_job: '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> On Job</span>'
+            };
+            return badges[activeStatus] || badges.offline;
         }
 
         // Get vehicle icon HTML
@@ -1018,7 +1179,20 @@ requireAdmin();
                                     </div>
                                     <div>
                                         <p class="text-sm text-gray-500 dark:text-slate-400">Status</p>
-                                        ${getStatusBadge(collector.status)}
+                                        <div class="flex items-center gap-2">
+                                            ${getStatusBadge(collector.status)}
+                                            ${collector.verified == 1 ? `
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    Verified
+                                                </span>
+                                            ` : `
+                                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-full">
+                                                    <i class="fas fa-exclamation-circle"></i>
+                                                    Not Verified
+                                                </span>
+                                            `}
+                                        </div>
                                     </div>
                                     <div>
                                         <p class="text-sm text-gray-500 dark:text-slate-400">Member Since</p>
@@ -1188,6 +1362,11 @@ requireAdmin();
         document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.add('ready');
             loadCollectors();
+            
+            // Auto-refresh every 30 seconds to show real-time status updates
+            setInterval(function() {
+                loadCollectors();
+            }, 30000);
         });
     </script>
 </body>

@@ -17,6 +17,12 @@ if (!$auth->isAuthenticated()) {
     exit;
 }
 
+// Capture user id and immediately release session lock
+$userId = $_SESSION['user_id'] ?? null;
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 // Verify the user is a collector
 try {
     $pdo = new PDO(
@@ -31,7 +37,7 @@ try {
         FROM collectors c 
         WHERE c.user_id = ?
     ");
-    $stmt->execute([$_SESSION['user_id']]);
+    $stmt->execute([$userId]);
     $collector = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$collector) {

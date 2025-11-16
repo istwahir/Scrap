@@ -1,4 +1,8 @@
 <?php
+session_start();
+require_once __DIR__ . '/../../includes/auth.php';
+requireCollector();
+
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -15,7 +19,6 @@ header("Expires: 0");
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Prevent FOUC (Flash of Unstyled Content) */
         body { opacity: 0; transition: opacity 0.2s ease-in; }
@@ -89,12 +92,21 @@ header("Expires: 0");
                             </svg>
                             <h2 class="text-base font-semibold text-gray-900 dark:text-white">Personal Details</h2>
                         </div>
-                        <button id="editProfileBtn" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                            Edit Profile
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="suggestDropoffBtn" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Add Drop-off Point
+                            </button>
+                            <button id="editProfileBtn" class="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                Edit Profile
+                            </button>
+                        </div>
                     </div>
                     <div id="profileView" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                         <div class="space-y-1">
@@ -165,66 +177,6 @@ header("Expires: 0");
                             </button>
                         </div>
                     </form>
-                </div>
-
-                <!-- Statistics Grid -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Total Collections</p>
-                                <p id="totalCollections" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
-                            </div>
-                            <div class="w-11 h-11 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Active Requests</p>
-                                <p id="activeRequests" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
-                            </div>
-                            <div class="w-11 h-11 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Total Earnings</p>
-                                <p id="totalEarnings" class="text-2xl font-bold text-gray-900 dark:text-white">KES 0</p>
-                            </div>
-                            <div class="w-11 h-11 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-500 dark:text-slate-400 mb-1">Rating</p>
-                                <p id="rating" class="text-2xl font-bold text-gray-900 dark:text-white">0.0</p>
-                                <p id="totalReviews" class="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">0 reviews</p>
-                            </div>
-                            <div class="w-11 h-11 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-                                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Vehicle & Service Areas -->
@@ -389,57 +341,157 @@ header("Expires: 0");
                         </div>
                     </div>
                 </div>
-
-                <!-- Collection History -->
-                <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Collection History</h2>
-                        <select id="historyPeriod" class="text-sm rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100">
-                            <option value="week">Past Week</option>
-                            <option value="month" selected>Past Month</option>
-                            <option value="year">Past Year</option>
-                        </select>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                            <thead>
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Date</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Customer</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Location</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Material</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Weight</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Amount</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">Rating</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historyTableBody" class="divide-y divide-gray-200 dark:divide-slate-700">
-                                <!-- Will be populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Performance Charts -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <!-- Earnings Trend -->
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Earnings Trend</h2>
-                        <div class="relative h-72">
-                            <canvas id="earningsChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Materials Distribution -->
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-slate-700">
-                        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Materials Distribution</h2>
-                        <div class="relative h-72">
-                            <canvas id="materialsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add Drop-off Point Modal -->
+    <div id="suggestDropoffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Add Drop-off Point</h2>
+                <button onclick="closeSuggestModal()" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <form id="suggestDropoffForm" class="p-6 space-y-4" enctype="multipart/form-data">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Name *</label>
+                    <input type="text" id="suggestDropoffName" name="name" required
+                           placeholder="e.g., Kiambu Recycling Center"
+                           class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                    <p id="nameWarning" class="hidden mt-1 text-sm text-yellow-600 dark:text-yellow-400">
+                        <svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        Similar drop-off point name exists
+                    </p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Address *</label>
+                    <div class="relative">
+                        <input type="text" id="suggestDropoffAddress" name="address" required
+                               placeholder="e.g., Kiambu Town, Main Street"
+                               class="w-full px-4 py-2 pr-10 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                        <button type="button" onclick="getMyLocation()" title="Use my current location"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        Click the location icon to auto-fill coordinates (you'll need to allow location access)
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Latitude *</label>
+                        <input type="number" step="0.00000001" id="suggestDropoffLat" name="lat" required
+                               placeholder="-1.171315"
+                               class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Longitude *</label>
+                        <input type="number" step="0.00000001" id="suggestDropoffLng" name="lng" required
+                               placeholder="36.835372"
+                               class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                        <p id="locationWarning" class="hidden mt-1 text-sm text-yellow-600 dark:text-yellow-400">
+                            <svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            Similar location within 1km exists
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Contact Phone</label>
+                    <input type="tel" id="suggestDropoffContact" name="contact_phone" 
+                           value="+254" placeholder="+254712345678"
+                           class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Operating Hours</label>
+                    <select id="suggestDropoffHours" name="operating_hours"
+                            class="w-full px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:text-white">
+                        <option value="">Select operating hours</option>
+                        <option value="24/7">24/7 - Open All Day</option>
+                        <option value="Mon-Fri: 8AM-5PM">Mon-Fri: 8AM-5PM</option>
+                        <option value="Mon-Fri: 8AM-6PM">Mon-Fri: 8AM-6PM</option>
+                        <option value="Mon-Sat: 8AM-5PM">Mon-Sat: 8AM-5PM</option>
+                        <option value="Mon-Sat: 8AM-6PM">Mon-Sat: 8AM-6PM</option>
+                        <option value="Mon-Sun: 8AM-5PM">Mon-Sun: 8AM-5PM</option>
+                        <option value="Mon-Sun: 8AM-6PM">Mon-Sun: 8AM-6PM</option>
+                        <option value="Mon-Fri: 9AM-5PM">Mon-Fri: 9AM-5PM</option>
+                        <option value="Mon-Sat: 9AM-5PM">Mon-Sat: 9AM-5PM</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Accepted Materials *</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="plastic" class="rounded">
+                            <span>Plastic</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="paper" class="rounded">
+                            <span>Paper</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="metal" class="rounded">
+                            <span>Metal</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="glass" class="rounded">
+                            <span>Glass</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-300">
+                            <input type="checkbox" name="materials[]" value="electronics" class="rounded">
+                            <span>Electronics</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Photo (optional)</label>
+                    <div class="mt-2">
+                        <input type="file" id="dropoffPhoto" name="photo" accept="image/*"
+                               class="hidden" onchange="previewDropoffPhoto(event)">
+                        <button type="button" onclick="document.getElementById('dropoffPhoto').click()"
+                                class="w-full px-4 py-3 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors flex flex-col items-center gap-2 text-gray-600 dark:text-slate-400">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <span class="text-sm">Click to upload drop-off point photo</span>
+                        </button>
+                        <div id="photoPreview" class="hidden mt-3">
+                            <img id="previewImage" class="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-slate-600">
+                            <button type="button" onclick="removeDropoffPhoto()" class="mt-2 text-sm text-red-600 hover:text-red-700 dark:text-red-400">Remove photo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                        Add Drop-off Point
+                    </button>
+                    <button type="button" onclick="closeSuggestModal()" class="px-6 py-3 bg-gray-300 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-400 dark:hover:bg-slate-600 transition-colors font-medium">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -447,10 +499,6 @@ header("Expires: 0");
         let currentProfileData = null;
         let currentVehicleData = null;
         let currentAreasData = null;
-        
-        // Store chart instances
-        let earningsChart = null;
-        let materialsChart = null;
 
         // Load profile data
         async function loadProfileData() {
@@ -473,11 +521,8 @@ header("Expires: 0");
                 currentVehicleData = data.vehicle; // Store vehicle data
                 currentAreasData = data.areas; // Store areas data
                 updateProfileHeader(data.profile);
-                updateStats(data.stats);
                 updateVehicleInfo(data.vehicle);
                 updateServiceAreas(data.areas);
-                updateHistory(data.history);
-                updateCharts(data.analytics);
             } catch (error) {
                 console.error('Failed to load profile data:', error);
             }
@@ -509,15 +554,6 @@ header("Expires: 0");
                     ${status.text}
                 </span>
             `;
-        }
-
-        // Update statistics
-        function updateStats(stats) {
-            document.getElementById('totalCollections').textContent = stats.total_collections;
-            document.getElementById('activeRequests').textContent = stats.active_requests || 0;
-            document.getElementById('totalEarnings').textContent = `KES ${Number(stats.total_earnings).toLocaleString()}`;
-            document.getElementById('rating').textContent = stats.rating.toFixed(1);
-            document.getElementById('totalReviews').textContent = `${stats.total_reviews} reviews`;
         }
 
         // Update vehicle information
@@ -554,105 +590,6 @@ header("Expires: 0");
                 areasList.appendChild(div);
             });
         }
-
-        // Update history table
-        function updateHistory(history) {
-            const tbody = document.getElementById('historyTableBody');
-            tbody.innerHTML = '';
-            
-            history.forEach(item => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">${item.date}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">${item.customer_name || '—'}</td>
-                    <td class="px-4 py-4 text-sm text-gray-900 dark:text-slate-100">
-                        <div class="max-w-xs truncate" title="${item.pickup_address || '—'}">
-                            ${item.pickup_address || '—'}
-                        </div>
-                    </td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">${item.material_type}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">${item.weight} kg</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">KES ${Number(item.amount).toLocaleString()}</td>
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">
-                        <div class="flex items-center">
-                            <span class="text-yellow-500 dark:text-yellow-400 mr-1">★</span>
-                            ${item.rating ?? 'N/A'}
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        // Update charts
-        function updateCharts(analytics) {
-            // Destroy existing charts if they exist
-            if (earningsChart) {
-                earningsChart.destroy();
-            }
-            if (materialsChart) {
-                materialsChart.destroy();
-            }
-            
-            // Earnings trend chart
-            const earningsCtx = document.getElementById('earningsChart').getContext('2d');
-            earningsChart = new Chart(earningsCtx, {
-                type: 'line',
-                data: {
-                    labels: analytics.earnings.labels,
-                    datasets: [{
-                        label: 'Daily Earnings',
-                        data: analytics.earnings.values,
-                        borderColor: 'rgb(34, 197, 94)',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-
-            // Materials distribution chart
-            const materialsCtx = document.getElementById('materialsChart').getContext('2d');
-            materialsChart = new Chart(materialsCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: analytics.materials.labels,
-                    datasets: [{
-                        data: analytics.materials.values,
-                        backgroundColor: [
-                            'rgb(59, 130, 246)',
-                            'rgb(234, 179, 8)',
-                            'rgb(75, 85, 99)',
-                            'rgb(34, 197, 94)',
-                            'rgb(168, 85, 247)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-
-        // Handle history period changes
-        document.getElementById('historyPeriod').addEventListener('change', async function(e) {
-            try {
-                const response = await fetch(`/Scrap/api/collectors/history.php?period=${encodeURIComponent(e.target.value)}` , { credentials: 'include' });
-                if (response.status === 401) {
-                    window.location.href = '/Scrap/login.php';
-                    return;
-                }
-                const data = await response.json();
-                if (data.status === 'success') {
-                    updateHistory(data.history);
-                }
-            } catch (error) {
-                console.error('Failed to update history:', error);
-            }
-        });
 
         // Profile edit functionality
         function toggleEditMode(show) {
@@ -935,7 +872,293 @@ header("Expires: 0");
             if (areasForm) {
                 areasForm.addEventListener('submit', handleAreasUpdate);
             }
+
+            // Drop-off suggestion listeners
+            const suggestDropoffBtn = document.getElementById('suggestDropoffBtn');
+            if (suggestDropoffBtn) {
+                suggestDropoffBtn.addEventListener('click', openSuggestModal);
+            }
+
+            const suggestForm = document.getElementById('suggestDropoffForm');
+            if (suggestForm) {
+                suggestForm.addEventListener('submit', handleDropoffSuggestion);
+            }
+
+            // Phone input validation - ensure +254 prefix
+            const phoneInput = document.getElementById('suggestDropoffContact');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function(e) {
+                    let value = e.target.value;
+                    // Always ensure it starts with +254
+                    if (!value.startsWith('+254')) {
+                        e.target.value = '+254';
+                    }
+                    // Prevent deletion of +254
+                    if (value.length < 4) {
+                        e.target.value = '+254';
+                    }
+                });
+                
+                phoneInput.addEventListener('keydown', function(e) {
+                    // Prevent backspace/delete if cursor is before position 4
+                    if ((e.key === 'Backspace' || e.key === 'Delete') && 
+                        e.target.selectionStart <= 4) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // Check for similar drop-offs as user types
+            const nameInput = document.getElementById('suggestDropoffName');
+            const latInput = document.getElementById('suggestDropoffLat');
+            const lngInput = document.getElementById('suggestDropoffLng');
+            
+            if (nameInput) {
+                nameInput.addEventListener('input', debounce(checkSimilarDropoffs, 500));
+            }
+            if (latInput && lngInput) {
+                latInput.addEventListener('input', debounce(checkSimilarDropoffs, 500));
+                lngInput.addEventListener('input', debounce(checkSimilarDropoffs, 500));
+            }
         });
+
+        // Drop-off suggestion functions
+        function openSuggestModal() {
+            document.getElementById('suggestDropoffModal').classList.remove('hidden');
+            // Reset phone to +254 if empty
+            const phoneInput = document.getElementById('suggestDropoffContact');
+            if (!phoneInput.value || phoneInput.value === '') {
+                phoneInput.value = '+254';
+            }
+        }
+
+        function closeSuggestModal() {
+            document.getElementById('suggestDropoffModal').classList.add('hidden');
+            document.getElementById('suggestDropoffForm').reset();
+            document.getElementById('photoPreview').classList.add('hidden');
+            document.getElementById('nameWarning').classList.add('hidden');
+            document.getElementById('locationWarning').classList.add('hidden');
+            // Reset phone to +254
+            document.getElementById('suggestDropoffContact').value = '+254';
+        }
+
+        function getMyLocation() {
+            if (!navigator.geolocation) {
+                showToast('Geolocation is not supported by your browser', 'error');
+                return;
+            }
+
+            // Show loading state
+            const addressInput = document.getElementById('suggestDropoffAddress');
+            const latInput = document.getElementById('suggestDropoffLat');
+            const lngInput = document.getElementById('suggestDropoffLng');
+            
+            if (!addressInput || !latInput || !lngInput) {
+                console.error('Location input fields not found');
+                return;
+            }
+            
+            const originalPlaceholder = addressInput.placeholder;
+            addressInput.placeholder = 'Getting location...';
+            addressInput.disabled = true;
+
+            // Geolocation options for better accuracy
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000, // 10 seconds
+                maximumAge: 0 // Don't use cached position
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    console.log('Location obtained:', { lat, lng, accuracy: position.coords.accuracy });
+                    
+                    // Fill in coordinates
+                    latInput.value = lat.toFixed(8);
+                    lngInput.value = lng.toFixed(8);
+                    
+                    // Set a default address with coordinates
+                    addressInput.value = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+                    addressInput.placeholder = 'Fetching address...';
+                    
+                    // Try to get address from coordinates using our server-side proxy
+                    try {
+                        const response = await fetch(
+                            `/Scrap/api/geocode.php?lat=${lat}&lng=${lng}`,
+                            { credentials: 'include' }
+                        );
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.status === 'success' && data.address) {
+                                addressInput.value = data.address;
+                                if (!data.fallback) {
+                                    showToast('Address retrieved successfully!', 'success');
+                                } else {
+                                    showToast('Location captured! (Address unavailable)', 'success');
+                                }
+                            }
+                        } else {
+                            console.warn('Geocoding response not OK:', response.status);
+                        }
+                    } catch (error) {
+                        console.log('Reverse geocoding unavailable, using coordinates only', error);
+                        // Keep the coordinate-based address already set
+                    }
+                    
+                    addressInput.placeholder = originalPlaceholder;
+                    addressInput.disabled = false;
+                    
+                    // Trigger similarity check
+                    checkSimilarDropoffs();
+                    
+                    // Only show success toast if we haven't already shown one
+                    if (!addressInput.value.includes('Lat:')) {
+                        showToast('Location captured successfully!', 'success');
+                    }
+                },
+                (error) => {
+                    addressInput.placeholder = originalPlaceholder;
+                    addressInput.disabled = false;
+                    
+                    console.error('Geolocation error:', error);
+                    
+                    let errorMessage = 'Unable to get your location';
+                    let helpText = '';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location access denied';
+                            helpText = 'Please enable location permissions in your browser settings and try again.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information unavailable';
+                            helpText = 'Your device could not determine your location. Try moving to an area with better signal.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out';
+                            helpText = 'The request took too long. Please try again.';
+                            break;
+                        default:
+                            errorMessage = 'Unable to get location';
+                            helpText = 'An unknown error occurred. Error code: ' + error.code;
+                    }
+                    
+                    showToast(errorMessage + '. ' + helpText, 'error');
+                },
+                options
+            );
+        }
+
+        function previewDropoffPhoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('photoPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function removeDropoffPhoto() {
+            document.getElementById('dropoffPhoto').value = '';
+            document.getElementById('photoPreview').classList.add('hidden');
+        }
+
+        async function checkSimilarDropoffs() {
+            const name = document.getElementById('suggestDropoffName').value;
+            const lat = document.getElementById('suggestDropoffLat').value;
+            const lng = document.getElementById('suggestDropoffLng').value;
+
+            if (!name && (!lat || !lng)) return;
+
+            try {
+                const params = new URLSearchParams();
+                if (name) params.append('name', name);
+                if (lat && lng) {
+                    params.append('lat', lat);
+                    params.append('lng', lng);
+                }
+
+                const response = await fetch(`/Scrap/api/collectors/check_dropoff_similarity.php?${params}`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // Show warnings if similar dropoffs found
+                    if (data.similar_name && name) {
+                        document.getElementById('nameWarning').classList.remove('hidden');
+                    } else {
+                        document.getElementById('nameWarning').classList.add('hidden');
+                    }
+
+                    if (data.similar_location && lat && lng) {
+                        document.getElementById('locationWarning').classList.remove('hidden');
+                    } else {
+                        document.getElementById('locationWarning').classList.add('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking similar dropoffs:', error);
+            }
+        }
+
+        async function handleDropoffSuggestion(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            
+            // Get selected materials
+            const materials = Array.from(document.querySelectorAll('input[name="materials[]"]:checked'))
+                .map(cb => cb.value);
+            
+            if (materials.length === 0) {
+                showToast('Please select at least one material type', 'error');
+                return;
+            }
+
+            // Remove old materials[] entries and add new one
+            formData.delete('materials[]');
+            formData.append('materials', materials.join(','));
+
+            try {
+                const response = await fetch('/Scrap/api/collectors/suggest_dropoff.php', {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    showToast(data.message || 'Drop-off point added successfully!', 'success');
+                    closeSuggestModal();
+                } else {
+                    throw new Error(data.message || 'Failed to add drop-off point');
+                }
+            } catch (error) {
+                console.error('Add dropoff error:', error);
+                showToast(error.message || 'Failed to add drop-off point', 'error');
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
     </script>
 </body>
 </html>

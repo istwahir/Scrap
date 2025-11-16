@@ -247,7 +247,7 @@ class AuthController {
      * @param string $password Password
      * @return array Response with status and user data if successful
      */
-    public function register($name, $email, $password) {
+    public function register($name, $email, $phone, $password) {
         try {
             // Validate email format
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -265,17 +265,25 @@ class AuthController {
                 ];
             }
 
-            // Check if user already exists
+            // Validate phone format (+2547/1XXXXXXXX)
+            if (!preg_match('/^\+254[17]\d{8}$/', $phone)) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Invalid phone number format'
+                ];
+            }
+
+            // Check if user already exists (by email or phone)
             $stmt = $this->db->prepare(
-                "SELECT id FROM users WHERE email = ?"
+                "SELECT id FROM users WHERE email = ? OR phone = ?"
             );
-            $stmt->execute([$email]);
+            $stmt->execute([$email, $phone]);
             $existingUser = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($existingUser) {
                 return [
                     'status' => 'error',
-                    'message' => 'Email address already registered'
+                    'message' => 'Email address or phone number already registered'
                 ];
             }
 
@@ -284,9 +292,9 @@ class AuthController {
 
             // Create new user
             $stmt = $this->db->prepare(
-                "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'citizen')"
+                "INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, 'citizen')"
             );
-            $stmt->execute([$name, $email, $hashedPassword]);
+            $stmt->execute([$name, $email, $phone, $hashedPassword]);
             $userId = $this->db->lastInsertId();
 
             // Set session

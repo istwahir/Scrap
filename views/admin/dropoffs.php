@@ -300,6 +300,11 @@ requireAdmin();
             grid.innerHTML = filtered.map(dropoff => `
                 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow">
                     <div class="p-6 space-y-4">
+                        ${dropoff.photo_url ? `
+                        <div class="mb-3">
+                            <img src="/Scrap/public/${dropoff.photo_url}" alt="${dropoff.name}" class="w-full h-40 object-cover rounded-md border border-gray-100 dark:border-slate-700">
+                        </div>
+                        ` : ''}
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">${dropoff.name}</h3>
@@ -309,6 +314,14 @@ requireAdmin();
                                     </svg>
                                     ${dropoff.address || 'N/A'}
                                 </p>
+                                ${dropoff.added_by_name ? `
+                                <div class="text-xs text-gray-500 dark:text-slate-400 mt-2 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Added by: ${dropoff.added_by_name} ${dropoff.added_by_role ? `<span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">(${dropoff.added_by_role})</span>` : ''}
+                                </div>
+                                ` : ''}
                             </div>
                             ${getStatusBadge(dropoff.status)}
                         </div>

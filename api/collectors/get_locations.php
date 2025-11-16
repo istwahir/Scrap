@@ -6,6 +6,11 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
 
+// Important: close PHP session to avoid locking during long-lived SSE
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 // Authentication: allow unauthenticated GET (SSE) consumers (map) to access locations feed
 // but keep AuthController available for future use.
 $auth = new AuthController();

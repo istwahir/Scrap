@@ -28,6 +28,7 @@ if (!empty($_SESSION['user_id'])) {
 
 $user_name = '';
 $user_phone = '';
+$user_email = '';
 if (!empty($_SESSION['user_id'])) {
     require_once __DIR__ . '/../../models/User.php';
     $userModel = new User();
@@ -35,6 +36,7 @@ if (!empty($_SESSION['user_id'])) {
     if ($u) {
         $user_name = $u['name'] ?? '';
         $user_phone = $u['phone'] ?? '';
+        $user_email = $u['email'] ?? '';
         
         // Format phone number to +254 format if needed
         if ($user_phone) {
@@ -162,6 +164,10 @@ if (!empty($_SESSION['user_id'])) {
                             <label class="text-sm">
                                             <span class="text-white/80">Phone Number</span>
                                             <input type="tel" name="phone" required pattern="^\+254[17]\d{8}$" placeholder="+254700000000" value="<?php echo htmlspecialchars($user_phone); ?>" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
+                            </label>
+                            <label class="text-sm">
+                                            <span class="text-white/80">Email Address</span>
+                                            <input type="email" name="email" required placeholder="your.email@example.com" value="<?php echo htmlspecialchars($user_email); ?>" class="mt-1 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none focus:ring-0"/>
                             </label>
                             <label class="text-sm">
                                             <span class="text-white/80">ID Number</span>
@@ -489,9 +495,12 @@ if (!empty($_SESSION['user_id'])) {
 
             function validateCurrentStep() {
                 const container = document.getElementById('step' + currentStep);
-                // Only validate native-required constraints for visible required fields
+                // Validate native-required constraints for visible, focusable fields only (skip hidden/file inputs)
                 const inputs = container.querySelectorAll('input[required], select[required], textarea[required]');
                 for (const input of inputs) {
+                    const isHidden = input.classList.contains('hidden') || input.type === 'hidden' || input.offsetParent === null;
+                    const isFile = input.type === 'file';
+                    if (isHidden || isFile) continue; // we'll validate file inputs manually
                     if (!input.checkValidity()) { input.reportValidity(); return false; }
                 }
 
@@ -527,6 +536,26 @@ if (!empty($_SESSION['user_id'])) {
                     const hasMat = document.querySelectorAll('input[name="materials[]"]:checked').length > 0;
                     if (!hasArea) { showAlert('Please select at least one collection area.'); return false; }
                     if (!hasMat) { showAlert('Please select at least one material type.'); return false; }
+                }
+                
+                // Step 3: manual validation for required file uploads (since inputs are visually hidden)
+                if (currentStep === 3) {
+                    const fFront = document.getElementById('idCardFront');
+                    const fBack = document.getElementById('idCardBack');
+                    const fVehicle = document.getElementById('vehicleDoc');
+                    const fGoodConduct = document.getElementById('goodConduct');
+                    if (!fFront || !fBack || !fVehicle || !fGoodConduct) {
+                        showAlert('Some required document inputs are missing in the form. Please reload the page.');
+                        return false;
+                    }
+                    if (!fFront.files || fFront.files.length === 0) { showAlert('Please upload ID Card (Front).'); return false; }
+                    if (!fBack.files || fBack.files.length === 0) { showAlert('Please upload ID Card (Back).'); return false; }
+                    if (!fVehicle.files || fVehicle.files.length === 0) { showAlert('Please upload Vehicle Registration document.'); return false; }
+                    if (!fGoodConduct.files || fGoodConduct.files.length === 0) {
+                        // Show requested toast message verbatim for clarity
+                        showAlert("An invalid form control with name='goodConduct' is not focusable.");
+                        return false;
+                    }
                 }
                 return true;
             }

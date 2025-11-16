@@ -23,6 +23,7 @@ try {
                 SELECT 
                     c.*,
                     c.vehicle_registration as vehicle_reg,
+                    c.verified,
                     u.name, u.email, u.phone, u.created_at,
                     COUNT(DISTINCT cr.id) as total_collections,
                     SUM(CASE WHEN cr.status = 'completed' THEN 1 ELSE 0 END) as completed_collections
@@ -69,6 +70,8 @@ try {
                     WHEN c.status = 'approved' THEN 'active'
                     ELSE c.status 
                 END as status,
+                c.active_status,
+                c.verified,
                 c.vehicle_type,
                 c.vehicle_registration as vehicle_reg,
                 u.name, 
@@ -79,7 +82,7 @@ try {
             FROM collectors c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN collection_requests cr ON c.id = cr.collector_id AND cr.status = 'completed'
-            GROUP BY c.id, c.user_id, c.status, c.vehicle_type, c.vehicle_registration, u.name, u.email, u.phone, u.created_at
+            GROUP BY c.id, c.user_id, c.status, c.active_status, c.verified, c.vehicle_type, c.vehicle_registration, u.name, u.email, u.phone, u.created_at
             ORDER BY c.created_at DESC
         ");
         $stmt->execute();
@@ -203,32 +206,38 @@ try {
                     exit;
                 }
                 
-                // Check if user already has a collector account
-                $checkStmt = $conn->prepare("SELECT id FROM users WHERE phone = ?");
+                // Find existing user (prefer matching by email, fallback to phone)
+                // Note: collector_applications has no email column; we match by phone to locate the user
+                $checkStmt = $conn->prepare("SELECT id, email, name, role FROM users WHERE phone = ?");
                 $checkStmt->execute([$application['phone']]);
                 $existingUser = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                
-                $userId = null;
-                
-                if ($existingUser) {
-                    $userId = $existingUser['id'];
-                } else {
-                    // Create new user account for the collector
-                    $userStmt = $conn->prepare("
-                        INSERT INTO users (name, phone, email, password, role, created_at) 
-                        VALUES (?, ?, ?, ?, 'collector', NOW())
-                    ");
-                    // Generate a temporary password (they should change it on first login)
-                    $tempPassword = password_hash('collector' . rand(1000, 9999), PASSWORD_DEFAULT);
-                    $email = strtolower(str_replace(' ', '', $application['name'])) . '@collector.local';
-                    $userStmt->execute([
-                        $application['name'],
-                        $application['phone'],
-                        $email,
-                        $tempPassword
+
+                if (!$existingUser) {
+                    // Do NOT create a new user. Admin approval must link to an existing account.
+                    echo json_encode([
+                        'status' => 'error',
+                        'message' => 'User account not found for phone ' . $application['phone'] . '. Please ensure the applicant registers first with their email, then try approval again.'
                     ]);
-                    $userId = $conn->lastInsertId();
+                    exit;
                 }
+
+                // Update existing user to collector role (preserve email)
+                $userId = $existingUser['id'];
+                $updateUserStmt = $conn->prepare("
+                    UPDATE users 
+                    SET name = ?, phone = ?, role = 'collector'
+                    WHERE id = ?
+                ");
+                $updateUserStmt->execute([
+                    $application['name'],
+                    $application['phone'],
+                    $userId
+                ]);
+                
+                // Check if collector record already exists for this user
+                $checkCollectorStmt = $conn->prepare("SELECT id FROM collectors WHERE user_id = ?");
+                $checkCollectorStmt->execute([$userId]);
+                $existingCollector = $checkCollectorStmt->fetch(PDO::FETCH_ASSOC);
                 
                 // Convert comma-separated strings to JSON arrays
                 $materialsArray = $application['materials_collected'] 
@@ -241,40 +250,74 @@ try {
                 $materialsJson = json_encode(array_map('trim', $materialsArray));
                 $areasJson = json_encode(array_map('trim', $areasArray));
                 
-                // Create collector record
-                $collectorStmt = $conn->prepare("
-                    INSERT INTO collectors (
-                        user_id, name, phone, id_number, vehicle_type, vehicle_registration,
-                        materials_collected, service_areas, status, license_file, created_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', '', NOW())
-                ");
+                if ($existingCollector) {
+                    // Update existing collector record
+                    $collectorId = $existingCollector['id'];
+                    $updateCollectorStmt = $conn->prepare("
+                        UPDATE collectors SET 
+                            name = ?, 
+                            email = ?,
+                            phone = ?, 
+                            id_number = ?, 
+                            vehicle_type = ?, 
+                            vehicle_registration = ?,
+                            materials_collected = ?, 
+                            service_areas = ?, 
+                            status = 'approved', 
+                            verified = 1
+                        WHERE id = ?
+                    ");
+                    $updateCollectorStmt->execute([
+                        $application['name'],
+                        $existingUser['email'] ?? null,
+                        $application['phone'],
+                        $application['id_number'],
+                        $application['vehicle_type'],
+                        $application['vehicle_reg'],
+                        $materialsJson,
+                        $areasJson,
+                        $collectorId
+                    ]);
+                } else {
+                    // Create new collector record
+                    $collectorStmt = $conn->prepare("
+                        INSERT INTO collectors (
+                            user_id, name, email, phone, id_number, vehicle_type, vehicle_registration,
+                            materials_collected, service_areas, status, verified, license_file, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', 1, '', NOW())
+                    ");
+                    
+                    $collectorStmt->execute([
+                        $userId,
+                        $application['name'],
+                        $existingUser['email'] ?? null,
+                        $application['phone'],
+                        $application['id_number'],
+                        $application['vehicle_type'],
+                        $application['vehicle_reg'],
+                        $materialsJson,
+                        $areasJson,
+                    ]);
+                    
+                    $collectorId = $conn->lastInsertId();
+                }
                 
-                $collectorStmt->execute([
-                    $userId,
-                    $application['name'],
-                    $application['phone'],
-                    $application['id_number'],
-                    $application['vehicle_type'],
-                    $application['vehicle_reg'],
-                    $materialsJson,
-                    $areasJson,
-                ]);
-                
-                $collectorId = $conn->lastInsertId();
-                
-                // Update user role to collector
-                $updateRoleStmt = $conn->prepare("UPDATE users SET role = 'collector' WHERE id = ?");
-                $updateRoleStmt->execute([$userId]);
-                
-                // Create initial location entry from application data
+                // Create or update initial location entry from application data
                 $latitude = $application['latitude'] ?: -1.286389; // Default to Nairobi if not provided
                 $longitude = $application['longitude'] ?: 36.817223;
                 
-                $locationStmt = $conn->prepare("
-                    INSERT INTO collector_locations (collector_id, latitude, longitude, timestamp)
-                    VALUES (?, ?, ?, NOW())
-                ");
-                $locationStmt->execute([$collectorId, $latitude, $longitude]);
+                // Check if location exists
+                $checkLocationStmt = $conn->prepare("SELECT id FROM collector_locations WHERE collector_id = ? ORDER BY timestamp DESC LIMIT 1");
+                $checkLocationStmt->execute([$collectorId]);
+                $existingLocation = $checkLocationStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$existingLocation) {
+                    $locationStmt = $conn->prepare("
+                        INSERT INTO collector_locations (collector_id, latitude, longitude, timestamp)
+                        VALUES (?, ?, ?, NOW())
+                    ");
+                    $locationStmt->execute([$collectorId, $latitude, $longitude]);
+                }
                 
                 // Update application status
                 $updateAppStmt = $conn->prepare("UPDATE collector_applications SET status = 'approved' WHERE id = ?");
@@ -319,8 +362,14 @@ try {
         $dbStatus = $input['status'] === 'active' ? 'approved' : $input['status'];
         $reason = isset($input['reason']) ? $input['reason'] : '';
         
-        $stmt = $conn->prepare("UPDATE collectors SET status = ? WHERE id = ?");
-        $stmt->execute([$dbStatus, $input['id']]);
+        // When approving, also set verified = 1
+        if ($dbStatus === 'approved') {
+            $stmt = $conn->prepare("UPDATE collectors SET status = ?, verified = 1 WHERE id = ?");
+            $stmt->execute([$dbStatus, $input['id']]);
+        } else {
+            $stmt = $conn->prepare("UPDATE collectors SET status = ? WHERE id = ?");
+            $stmt->execute([$dbStatus, $input['id']]);
+        }
         
         // Optional: Log the action (if admin_logs table exists)
         try {
@@ -346,6 +395,51 @@ try {
         echo json_encode([
             'status' => 'success',
             'message' => 'Collector status updated successfully'
+        ]);
+    }
+    
+    // DELETE request - Delete application
+    elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        // Parse query string or input
+        $appId = isset($_GET['application_id']) ? $_GET['application_id'] : null;
+        
+        if (!$appId) {
+            // Try parsing from raw input
+            parse_str(file_get_contents('php://input'), $input);
+            $appId = isset($input['application_id']) ? $input['application_id'] : null;
+        }
+        
+        if (!$appId) {
+            echo json_encode(['status' => 'error', 'message' => 'Application ID is required']);
+            exit;
+        }
+        
+        // Check if application exists and is rejected
+        $checkStmt = $conn->prepare("SELECT status FROM collector_applications WHERE id = ?");
+        $checkStmt->execute([$appId]);
+        $application = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$application) {
+            echo json_encode(['status' => 'error', 'message' => 'Application not found']);
+            exit;
+        }
+        
+        if ($application['status'] !== 'rejected') {
+            echo json_encode(['status' => 'error', 'message' => 'Only rejected applications can be deleted']);
+            exit;
+        }
+        
+        // Delete related records first
+        $conn->prepare("DELETE FROM collector_areas WHERE application_id = ?")->execute([$appId]);
+        $conn->prepare("DELETE FROM collector_materials WHERE application_id = ?")->execute([$appId]);
+        
+        // Delete application
+        $deleteStmt = $conn->prepare("DELETE FROM collector_applications WHERE id = ?");
+        $deleteStmt->execute([$appId]);
+        
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Application deleted successfully'
         ]);
     }
     

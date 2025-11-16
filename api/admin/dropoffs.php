@@ -20,10 +20,24 @@ try {
         $stmt = $conn->prepare("
             SELECT 
                 d.*,
+                CASE 
+                    WHEN d.added_by_role = 'collector' THEN c.user_id
+                    WHEN d.added_by_role = 'admin' THEN d.added_by
+                    ELSE NULL
+                END as user_ref,
+                CASE 
+                    WHEN d.added_by_role = 'collector' THEN u_collector.name
+                    WHEN d.added_by_role = 'admin' THEN u_admin.name
+                    ELSE 'System'
+                END as added_by_name,
+                d.added_by_role,
                 COUNT(DISTINCT r.id) as collection_count
             FROM dropoff_points d
+            LEFT JOIN collectors c ON d.added_by = c.id AND d.added_by_role = 'collector'
+            LEFT JOIN users u_collector ON c.user_id = u_collector.id
+            LEFT JOIN users u_admin ON d.added_by = u_admin.id AND d.added_by_role = 'admin'
             LEFT JOIN collection_requests r ON r.dropoff_point_id = d.id
-            GROUP BY d.id
+            GROUP BY d.id, d.photo_url, d.added_by, d.added_by_role, u_collector.name, u_admin.name
             ORDER BY d.created_at DESC
         ");
         $stmt->execute();

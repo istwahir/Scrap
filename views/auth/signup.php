@@ -77,6 +77,15 @@ if (isset($_SESSION['user_id'])) {
             </div>
 
             <div>
+                <label for="phone" class="block text-xs font-semibold uppercase tracking-[0.3em] text-white/60 mb-3">
+                    Phone Number
+                </label>
+                <input type="tel" id="phone" placeholder="+254700000000" pattern="^\+254[17]\d{8}$"
+                       class="w-full px-4 py-3 rounded-2xl border border-white/15 bg-white/5 text-white placeholder:text-slate-400 shadow-inner shadow-black/20 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                <p class="text-xs text-slate-400/80 mt-2">Use your WhatsApp number in +2547XXXXXXXX format</p>
+            </div>
+
+            <div>
                 <label for="email" class="block text-xs font-semibold uppercase tracking-[0.3em] text-white/60 mb-3">
                     Email Address
                 </label>
@@ -170,6 +179,7 @@ if (isset($_SESSION['user_id'])) {
         async function register() {
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const btn = document.getElementById('registerBtn');
@@ -183,6 +193,16 @@ if (isset($_SESSION['user_id'])) {
                 showError('Please enter your email address');
                 return;
             }
+            if (!phone) {
+                showError('Please enter your phone number');
+                return;
+            }
+
+            if (!/^\+254[17]\d{8}$/.test(phone)) {
+                showError('Please enter a valid Kenyan phone number (e.g., +254712345678)');
+                return;
+            }
+
 
             // Basic email validation
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -215,7 +235,7 @@ if (isset($_SESSION['user_id'])) {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ name: name, email: email, password: password })
+                    body: JSON.stringify({ name, email, phone, password })
                 });
 
                 const data = await response.json();
@@ -263,6 +283,51 @@ if (isset($_SESSION['user_id'])) {
                 navigator.serviceWorker.register('/Scrap/public/service-worker.js');
             });
         }
+
+        // Phone input: enforce +254 prefix and numeric input after the prefix
+        document.addEventListener('DOMContentLoaded', () => {
+            const phone = document.getElementById('phone');
+            if (!phone) return;
+            const PREFIX = '+254';
+
+            const normalize = (val) => {
+                // keep only digits, then rebuild as +254 + rest
+                const digits = String(val || '').replace(/\D/g, '');
+                let rest = digits;
+                if (rest.startsWith('254')) {
+                    rest = rest.slice(3);
+                } else if (rest.startsWith('0')) {
+                    rest = rest.slice(1);
+                }
+                // limit to max 9 digits after +254
+                rest = rest.slice(0, 9);
+                return PREFIX + rest;
+            };
+
+            const ensurePrefix = () => {
+                phone.value = normalize(phone.value || '');
+                // place cursor at end
+                const pos = phone.value.length;
+                try { phone.setSelectionRange(pos, pos); } catch (e) {}
+            };
+
+            phone.addEventListener('focus', ensurePrefix);
+            phone.addEventListener('blur', ensurePrefix);
+            phone.addEventListener('input', () => {
+                const before = phone.value;
+                phone.value = normalize(before);
+            });
+            phone.addEventListener('keydown', (e) => {
+                // Prevent deleting the +254 prefix
+                if ((e.key === 'Backspace' || e.key === 'Delete') && phone.selectionStart <= PREFIX.length) {
+                    e.preventDefault();
+                    try { phone.setSelectionRange(PREFIX.length, PREFIX.length); } catch (err) {}
+                }
+            });
+
+            // Initialize on load
+            ensurePrefix();
+        });
     </script>
 </body>
 </html>

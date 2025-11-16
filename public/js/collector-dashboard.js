@@ -11,16 +11,21 @@
 */
 
 import './collector-tracker.js'; // ensure tracker class loaded
+// Script loaded
 
 const state = {
   data: null,
   charts: {},
   activeMarkers: [],
+  dropoffMarkers: [], // Store drop-off point markers
   activeRouteLayer: null,
   tracker: null,
   map: null,
   myLocationMarker: null,
-  loading: false
+  myLocationWatchId: null,
+  loading: false,
+  loadingDropoffs: false,
+  pendingStatus: null
 };
 
 // Elements
@@ -69,8 +74,14 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(state.map);
-  state.tracker = new CollectorTracker(state.map);
-  state.tracker.startTracking();
+  // Load drop-offs first, then start live tracking to avoid any initial contention
+  loadDropoffPoints().finally(() => {
+    state.tracker = new CollectorTracker(state.map);
+    state.tracker.startTracking();
+    // Apply any pending status once tracker is ready
+    const desired = state.pendingStatus || sessionStorage.getItem('collectorStatus') || 'online';
+    updateStatus(desired);
+  });
 }
 
 function initNavigation() {
@@ -123,6 +134,7 @@ async function loadDashboardData({ silent=false } = {}) {
     if (json.status === 'success') {
       state.data = json;
       renderAll();
+      loadDropoffPoints(); // Load drop-off points after dashboard data
       if (!silent) toast('Dashboard updated', 'success');
     } else {
       toast(json.message || 'Failed to load', 'error');
@@ -134,6 +146,121 @@ async function loadDashboardData({ silent=false } = {}) {
     state.loading = false;
   }
 }
+
+// Load collector's drop-off points (clean version)
+async function loadDropoffPoints() {
+  try {
+    if (state.loadingDropoffs) { return; }
+    state.loadingDropoffs = true;
+    if (!state.map) {
+      // Map not initialized yet, retry shortly
+      setTimeout(loadDropoffPoints, 1000);
+      return;
+    }
+
+    const url = BASE_DROPOFF_URL();
+    const controller = new AbortController();
+    const timeoutMs = 8000;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let res;
+    try {
+      res = await fetch(url + '?v=' + Date.now(), { 
+        credentials: 'same-origin', 
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.warn('Drop-off fetch aborted after timeout');
+      } else {
+        console.warn('Drop-off fetch error:', err);
+      }
+    } finally { clearTimeout(timeoutId); }
+
+    if (!res) {
+      toast('Drop-off points fetch timed out', 'warning');
+      return;
+    }
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      toast('Auth/session issue loading drop-off points', 'warning');
+      return;
+    }
+    let json;
+    try { json = await res.json(); } catch (parseErr) {
+      console.error('Drop-off JSON parse failed', parseErr);
+      toast('Invalid drop-off points response', 'error');
+      return;
+    }
+
+    if (json.status === 'error') {
+      console.warn('Drop-off API error:', json.message);
+      toast(json.message || 'Drop-off load error', 'warning');
+      return;
+    }
+
+    if (json.status === 'success' && Array.isArray(json.dropoffs)) {
+      plotDropoffPointsOnMap(json.dropoffs);
+    } else {
+      console.warn('Unexpected drop-off payload shape');
+      toast('Unexpected drop-off response', 'warning');
+    }
+  } catch (e) {
+    console.error('Load drop-off points exception:', e);
+    toast('Could not load drop-off points', 'error');
+  }
+  finally {
+    state.loadingDropoffs = false;
+  }
+}
+
+// Quick session ping (diagnostics removed)
+
+// Helper to get base API URL robustly
+function BASE_DROPOFF_URL() {
+  // If site served under /Scrap keep path, else relative fallback
+  const origin = window.location.origin;
+  if (window.location.pathname.startsWith('/Scrap')) {
+    return origin + '/Scrap/api/collectors/get_dropoff_points.php';
+  }
+  return origin + '/Scrap/api/collectors/get_dropoff_points.php'; // Force Scrap path to avoid 404
+}
+
+// Plot drop-off points on map with custom markers and tooltips
+function plotDropoffPointsOnMap(dropoffs) {
+  if (!state.map) { console.error('Map not available'); return; }
+  // Clear existing markers
+  state.dropoffMarkers.forEach(m => state.map.removeLayer(m));
+  state.dropoffMarkers = [];
+  if (!dropoffs || dropoffs.length === 0) { return; }
+  const dropoffIcon = L.divIcon({
+    className: 'custom-dropoff-marker',
+    html: `<div style="background-color:#10b981;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;">
+      <svg style="transform:rotate(45deg);width:16px;height:16px;fill:white" viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+    </div>`,
+    iconSize: [30,42],
+    iconAnchor: [15,42],
+    popupAnchor: [0,-42]
+  });
+  dropoffs.forEach((dropoff, index) => {
+    if (!dropoff.lat || !dropoff.lng) { console.warn('Missing coords for', dropoff.name); return; }
+    const latlng = [parseFloat(dropoff.lat), parseFloat(dropoff.lng)];
+    const tooltipContent = `<div style=\"min-width:200px;\">\n      <h3 style=\"font-weight:600;font-size:14px;margin-bottom:6px;color:#1f2937;\">${dropoff.name}</h3>\n      <p style=\"font-size:12px;color:#6b7280;margin-bottom:4px;\">${dropoff.address}</p>\n      <p style=\"font-size:11px;color:#9ca3af;margin-bottom:6px;\"><strong>Materials:</strong> ${dropoff.materials.join(', ')}</p>\n      ${dropoff.operating_hours ? `<p style=\"font-size:11px;color:#9ca3af;margin-bottom:4px;\"><strong>Hours:</strong> ${dropoff.operating_hours}</p>` : ''}\n      ${dropoff.contact_phone ? `<p style=\"font-size:11px;color:#9ca3af;margin-bottom:4px;\"><strong>Phone:</strong> ${dropoff.contact_phone}</p>` : ''}\n      <p style=\"font-size:11px;margin-top:6px;\">\n        <span style=\"background-color:${dropoff.status==='active'?'#dcfce7':'#f3f4f6'};color:${dropoff.status==='active'?'#166534':'#6b7280'};padding:2px 8px;border-radius:9999px;font-weight:500;\">${dropoff.status==='active'?'✓ Active':'Inactive'}</span>\n        ${dropoff.collection_count>0 ? `<span style=\"margin-left:6px;color:#6b7280;\">${dropoff.collection_count} collection${dropoff.collection_count!==1?'s':''}</span>`:''}\n      </p>\n    </div>`;
+    try {
+      const marker = L.marker(latlng, { icon: dropoffIcon })
+        .bindTooltip(tooltipContent, { permanent:false, direction:'top', offset:[0,-35], className:'custom-dropoff-tooltip' })
+        .addTo(state.map);
+      state.dropoffMarkers.push(marker);
+    } catch(err) { console.error('Marker error', err); }
+  });
+  // Fit bounds to markers for a better initial view
+  if (state.dropoffMarkers.length > 0) {
+    const group = L.featureGroup(state.dropoffMarkers);
+    state.map.fitBounds(group.getBounds().pad(0.25));
+  }
+}
+
 
 // Rendering
 function renderAll() {
@@ -423,6 +550,25 @@ async function completeCollection(id) {
 
 // Status handling
 async function updateStatus(value) {
+  // If tracker not yet initialized, queue the status without erroring
+  if (!state.tracker) {
+    state.pendingStatus = value;
+    sessionStorage.setItem('collectorStatus', value);
+    if (els.statusSelect) els.statusSelect.value = value;
+    // Update basic UI elements (without server confirmation)
+    if (els.locationStatus) {
+      els.locationStatus.textContent = value !== 'offline' ? 'Active' : 'Inactive';
+      els.locationStatus.className = value !== 'offline'
+        ? 'text-green-600 dark:text-green-400'
+        : 'text-red-600 dark:text-red-400';
+    }
+    if (els.globalStatusBadge) {
+      const statusText = value.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+      els.globalStatusBadge.textContent = statusText;
+      els.globalStatusBadge.classList.remove('hidden');
+    }
+    return; // Will be applied once tracker is ready
+  }
   try {
     await state.tracker.updateStatus(value);
     els.locationStatus.textContent = value !== 'offline' ? 'Active' : 'Inactive';
@@ -512,62 +658,72 @@ function locateMe() {
     toast('Geolocation unsupported','error'); 
     return; 
   }
-  
-  toast('Getting your location...', 'info');
-  
-  navigator.geolocation.getCurrentPosition(
+
+  // Toggle tracking: if already watching, stop
+  if (state.myLocationWatchId !== null) {
+    navigator.geolocation.clearWatch(state.myLocationWatchId);
+    state.myLocationWatchId = null;
+    if (state.myLocationMarker) {
+      state.map.removeLayer(state.myLocationMarker);
+      state.myLocationMarker = null;
+    }
+    const btn = document.getElementById('locateMeBtn');
+    if (btn) btn.textContent = 'My Location';
+    toast('Stopped location tracking','info');
+    return;
+  }
+
+  toast('Tracking your location...','info');
+  const btn = document.getElementById('locateMeBtn');
+  if (btn) btn.textContent = 'Stop Tracking';
+
+  // Watch and update marker position
+  state.myLocationWatchId = navigator.geolocation.watchPosition(
     pos => {
       const ll = [pos.coords.latitude, pos.coords.longitude];
-      
-      // Get vehicle type from state data, default to 'truck'
       const vehicleType = state.data?.vehicle?.type?.toLowerCase() || 'truck';
-      
-      // Create icon based on vehicle type
-      const icon = L.icon({
-        iconUrl: `/Scrap/public/images/markers/${vehicleType}.svg`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40]
+      const icon = L.divIcon({
+        className: 'vehicle-pulse',
+        html: `<div class="pulse-ring"></div><img src="/Scrap/public/images/markers/${vehicleType}.svg" alt="${vehicleType}" />`,
+        iconSize: [40,40],
+        iconAnchor: [20,20]
       });
-      
-      // Remove old marker if exists
-      if (state.myLocationMarker) {
-        state.map.removeLayer(state.myLocationMarker);
+      // Create or move marker
+      if (!state.myLocationMarker) {
+        state.myLocationMarker = L.marker(ll, { icon })
+          .addTo(state.map)
+          .bindPopup('Your Location');
+      } else {
+        state.myLocationMarker.setLatLng(ll);
       }
-      
-      // Add new marker with vehicle icon
-      state.myLocationMarker = L.marker(ll, { icon: icon })
-        .addTo(state.map)
-        .bindPopup('Your Location')
-        .openPopup();
-      
-      state.map.flyTo(ll, 15);
-      toast('Location found!', 'success');
-    }, 
-    (error) => {
-      // Handle different error types
+      // Only open popup first time
+      if (!state.myLocationMarker._popup || !state.myLocationMarker._popup.isOpen()) {
+        state.myLocationMarker.openPopup();
+      }
+      // Smooth fly for first few updates only
+      if (!state._didInitialFly) {
+        state.map.flyTo(ll, 15);
+        state._didInitialFly = true;
+      }
+    },
+    error => {
       let message = 'Could not get location';
       switch(error.code) {
-        case error.PERMISSION_DENIED:
-          message = 'Location permission denied. Please enable location access in your browser settings.';
-          break;
-        case error.POSITION_UNAVAILABLE:
-          message = 'Location information unavailable. Please check your device settings.';
-          break;
-        case error.TIMEOUT:
-          message = 'Location request timed out. Please try again.';
-          break;
-        default:
-          message = 'An unknown error occurred while getting location.';
+        case error.PERMISSION_DENIED: message = 'Permission denied – enable location access.'; break;
+        case error.POSITION_UNAVAILABLE: message = 'Location unavailable – check device.'; break;
+        case error.TIMEOUT: message = 'Location timeout – retry.'; break;
+        default: message = 'Unknown geolocation error.';
       }
-      console.warn('Geolocation error:', error);
-      toast(message, 'error');
+      toast(message,'error');
+      // Stop tracking if no permission
+      if (error.code === error.PERMISSION_DENIED) {
+        if (state.myLocationWatchId !== null) navigator.geolocation.clearWatch(state.myLocationWatchId);
+        state.myLocationWatchId = null;
+        const b = document.getElementById('locateMeBtn');
+        if (b) b.textContent = 'My Location';
+      }
     },
-    {
-      enableHighAccuracy: false,
-      timeout: 15000,
-      maximumAge: 60000
-    }
+    { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
   );
 }
 
@@ -609,6 +765,7 @@ window.addEventListener('DOMContentLoaded', () => {
   if (!guardAuth()) {
     return; // Stop execution if not authenticated
   }
+  // Quick session ping once at startup for diagnostics
   initTheme();
   initMap();
   initNavigation();
@@ -617,7 +774,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // Set persisted status
   const st = sessionStorage.getItem('collectorStatus') || 'online';
   els.statusSelect.value = st;
-  updateStatus(st);
+  // Defer actual server update until tracker is ready (handled in initMap)
+  state.pendingStatus = st;
   loadDashboardData();
   setInterval(()=>loadDashboardData({ silent: true }), 30000);
   showSection('overview');
@@ -625,7 +783,6 @@ window.addEventListener('DOMContentLoaded', () => {
   // Listen for status changes from sidebar
   window.addEventListener('collectorStatusChanged', (event) => {
     const newStatus = event.detail.status;
-    console.log('Status changed to:', newStatus);
     
     // Update status select if it exists
     if (els.statusSelect) {
